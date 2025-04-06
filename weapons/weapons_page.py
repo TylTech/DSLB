@@ -49,20 +49,6 @@ def show_weapons_page():
     if st.session_state.get("weapon_added"):
         st.session_state["weapon_added"] = False
 
-    with st.expander("📋 Paste Weapon Identification"):
-        pasted_text = st.text_area("Paste the weapon identification text here")
-        if st.button("Add Weapon from Text"):
-            weapon_data = parse_weapon_identification(pasted_text)
-            if weapon_data:
-                try:
-                    supabase.table("weapons").insert(weapon_data).execute()
-                    st.success(f"'{weapon_data['Weapon']}' added successfully!")
-                    st.session_state["weapon_added"] = True
-                    st.rerun()
-                except Exception as e:
-                    st.error("Failed to add weapon to database.")
-                    st.exception(e)
-
     try:
         response = supabase.table("weapons").select("*").execute()
         data = response.data
@@ -128,6 +114,21 @@ def show_weapons_page():
 
 
         )
+
+        st.subheader("📋 Add New Weapon")
+        with st.expander("Paste Weapon Identification"):
+            pasted_text = st.text_area("Paste the weapon identification text here")
+            if st.button("Add Weapon from Text"):
+                weapon_data = parse_weapon_identification(pasted_text)
+                if weapon_data:
+                    try:
+                        supabase.table("weapons").insert(weapon_data).execute()
+                        st.success(f"'{weapon_data['Weapon']}' added successfully!")
+                        st.session_state["weapon_added"] = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error("Failed to add weapon to database.")
+                        st.exception(e)
 
         st.subheader("🛠️ Edit Weapon Entry")
         weapon_names = filtered_df["Weapon"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
