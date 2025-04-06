@@ -114,7 +114,7 @@ def show_weapons_page():
             hide_index=True,
             disabled=True,
             column_config={
-                "Weapon": st.column_config.TextColumn("Weapon", width="small"),
+                "Weapon": st.column_config.TextColumn("Weapon", width="medium"),
                 "Wt": st.column_config.NumberColumn("Wt", width="small"),
                 "Dam": st.column_config.NumberColumn("Dam", width="small"),
                 "1H/2H": st.column_config.TextColumn("1H/2H", width="small"),
