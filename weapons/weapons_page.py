@@ -105,7 +105,7 @@ def show_weapons_page():
                 filtered_df["Flag 2_lower"].isin(lower_flags)
             ]
 
-        display_columns = ["Weapon", "Type", "Dam", "Noun", "Flag 1", "Flag 2", "Wt", "1H/2H", "Roll", "Notes"]
+        display_columns = ["Weapon", "Type", "Dam", "Wt", "Noun", "Flag 1", "Flag 2", "1H/2H", "Roll", "Notes"]
 
         st.subheader("🗡️ Weapon Arsenal")
         st.data_editor(
