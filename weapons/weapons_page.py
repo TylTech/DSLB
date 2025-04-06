@@ -10,13 +10,22 @@ def parse_weapon_identification(lore):
         damage = int(lore.split("Damage is ")[1].split(" (average ")[1].split(")")[0])
         roll = lore.split("Damage is ")[1].split(" (")[0]
 
-        flags_section = lore.split("Weapons flags:")[1].split("Condition:")[0].strip().split()
-        one_or_two_handed = "2H" if "two-handed" in flags_section else "1H"
-        if "two-handed" in flags_section:
-            flags_section.remove("two-handed")
+        # Default values
+        one_or_two_handed = "1H"
+        flag_1 = ""
+        flag_2 = ""
 
-        flag_1 = flags_section[0] if len(flags_section) > 0 else ""
-        flag_2 = flags_section[1] if len(flags_section) > 1 else ""
+        # Try to get weapon flags from the first line if present
+        first_line = lore.splitlines()[0].lower()
+        if "extra flags" in first_line:
+            flags_section = first_line.split("extra flags")[1].replace(".", "").strip().split()
+            if "two-handed" in flags_section:
+                one_or_two_handed = "2H"
+                flags_section.remove("two-handed")
+            if len(flags_section) > 0:
+                flag_1 = flags_section[0]
+            if len(flags_section) > 1:
+                flag_2 = flags_section[1]
 
         return {
             "Weapon": weapon_name,
@@ -26,7 +35,7 @@ def parse_weapon_identification(lore):
             "Noun": "",
             "Flag 1": flag_1,
             "Flag 2": flag_2,
-            "Other Notes": "",
+            "Notes": "",
             "Wt": weight,
             "1H/2H": one_or_two_handed
         }
@@ -38,8 +47,6 @@ def show_weapons_page():
     st.header("⚔️ Weapons")
 
     if st.session_state.get("weapon_added"):
-        for key in ["filter_types", "filter_handed", "filter_nouns", "filter_flags"]:
-            st.session_state.pop(key, None)
         st.session_state["weapon_added"] = False
 
     with st.expander("📋 Paste Weapon Identification"):
@@ -63,11 +70,10 @@ def show_weapons_page():
             st.warning("No weapons found in the database.")
             return
 
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(data).sort_values(by="Weapon", key=lambda col: col.str.lower())
         df["Dam"] = pd.to_numeric(df["Dam"], errors="coerce")
         df["Wt"] = pd.to_numeric(df["Wt"], errors="coerce")
 
-        # Add lowercased versions for case-insensitive sorting/filtering
         df["Type_lower"] = df["Type"].str.lower()
         df["1H/2H_lower"] = df["1H/2H"].str.lower()
         df["Noun_lower"] = df["Noun"].str.lower()
@@ -99,60 +105,83 @@ def show_weapons_page():
                 filtered_df["Flag 2_lower"].isin(lower_flags)
             ]
 
-        sort_column = st.selectbox("Sort by column:", [col for col in df.columns if col not in ["id"]], index=0)
-        sort_direction = st.radio("Sort direction:", ["Ascending", "Descending"], horizontal=True)
-        filtered_df = filtered_df.sort_values(
-            by=sort_column,
-            key=lambda col: col.str.lower() if col.dtype == "object" else col,
-            ascending=(sort_direction == "Ascending")
-        )
+        display_columns = ["Weapon", "Type", "Dam", "Noun", "Flag 1", "Flag 2", "Wt", "1H/2H", "Roll", "Notes"]
 
-        filtered_df_with_id = filtered_df.copy()
-        display_df = filtered_df.drop(columns=[col for col in filtered_df.columns if col == "id" or col.endswith("_lower")], errors="ignore")
-
-        edited_df = st.data_editor(
-            display_df.reset_index(drop=True),
-            num_rows="dynamic",
+        st.subheader("🗡️ Weapon Arsenal")
+        st.data_editor(
+            filtered_df[display_columns],
             use_container_width=True,
             hide_index=True,
-            key="weapons_editor"
+            disabled=True,
+            column_config={
+                "Weapon": st.column_config.TextColumn("Weapon", width="large"),
+                "Wt": st.column_config.NumberColumn("Wt", width="small"),
+                "Dam": st.column_config.NumberColumn("Dam", width="small"),
+                "1H/2H": st.column_config.TextColumn("1H/2H", width="small"),
+                "Type": st.column_config.TextColumn("Type", width="small"),
+                "Roll": st.column_config.TextColumn("Roll", width="small"),
+                "Noun": st.column_config.TextColumn("Noun", width="small"),
+                "Flag 1": st.column_config.TextColumn("Flag 1", width="small"),
+                "Flag 2": st.column_config.TextColumn("Flag 2", width="small"),
+                "Notes": st.column_config.TextColumn("Notes", width="small"),
+            }
+
+
         )
 
-        if st.button("💾 Save Changes"):
-            changes = []
-            for i, row in edited_df.iterrows():
-                updated_row = row.to_dict()
-                full_row = filtered_df_with_id.iloc[i].to_dict()
-                if any(updated_row.get(k) != full_row.get(k) for k in updated_row):
-                    row_id = full_row["id"]
-                    update_payload = {k: v for k, v in updated_row.items() if not k.endswith("_lower")}
-                    supabase.table("weapons").update(update_payload).eq("id", row_id).execute()
-                    changes.append(update_payload)
+        st.subheader("🛠️ Edit Weapon Entry")
+        weapon_names = filtered_df["Weapon"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
+        selected_weapon_name = st.selectbox("Select weapon to edit", weapon_names)
 
-            if changes:
-                st.success(f"Saved {len(changes)} change(s) to the database.")
-            else:
-                st.info("No changes to save.")
+        if selected_weapon_name:
+            selected_row = df[df["Weapon"] == selected_weapon_name].iloc[0]
 
-        with st.expander("🗑️ Delete Weapon(s)"):
-            if not filtered_df.empty:
-                weapon_names = filtered_df["Weapon"].tolist()
-                to_delete = st.multiselect("Select weapon(s) to delete:", weapon_names)
+            with st.expander("✏️ Edit This Weapon"):
+                with st.form("edit_weapon_form"):
+                    col1, col2 = st.columns(2)
+                    weapon_type = col1.text_input("Type", selected_row["Type"])
+                    one_h_two_h = col2.selectbox("1H/2H", ["1H", "2H"], index=["1H", "2H"].index(selected_row["1H/2H"]))
 
-                if st.button("Confirm Delete"):
-                    if to_delete:
-                        for name in to_delete:
-                            try:
-                                supabase.table("weapons").delete().eq("Weapon", name).execute()
-                            except Exception as e:
-                                st.error(f"Failed to delete {name}.")
-                                st.exception(e)
-                        st.success(f"Deleted {len(to_delete)} weapon(s).")
+                    col3, col4 = st.columns(2)
+                    dam = col3.number_input("Damage", value=selected_row["Dam"], step=1)
+                    wt = col4.number_input("Weight", value=selected_row["Wt"], step=1)
+
+                    roll = st.text_input("Roll", selected_row["Roll"])
+                    noun = st.text_input("Noun", selected_row["Noun"])
+                    flag_1 = st.text_input("Flag 1", selected_row["Flag 1"])
+                    flag_2 = st.text_input("Flag 2", selected_row["Flag 2"])
+                    notes = st.text_area("Notes", selected_row["Notes"])
+
+                    submitted = st.form_submit_button("💾 Save Changes")
+                    if submitted:
+                        update_payload = {
+                            "Type": weapon_type,
+                            "1H/2H": one_h_two_h,
+                            "Dam": dam,
+                            "Wt": wt,
+                            "Roll": roll,
+                            "Noun": noun,
+                            "Flag 1": flag_1,
+                            "Flag 2": flag_2,
+                            "Notes": notes
+                        }
+                        try:
+                            supabase.table("weapons").update(update_payload).eq("id", selected_row["id"]).execute()
+                            st.success(f"'{selected_weapon_name}' updated successfully!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error("Failed to update weapon.")
+                            st.exception(e)
+
+            with st.expander("🗑️ Delete This Weapon"):
+                if st.button("Delete Weapon"):
+                    try:
+                        supabase.table("weapons").delete().eq("id", selected_row["id"]).execute()
+                        st.success(f"'{selected_weapon_name}' deleted successfully!")
                         st.rerun()
-                    else:
-                        st.warning("Please select at least one weapon to delete.")
-            else:
-                st.info("No weapons available to delete.")
+                    except Exception as e:
+                        st.error("Failed to delete weapon.")
+                        st.exception(e)
 
     except Exception as e:
         st.error("Failed to load or update weapons from Supabase.")
