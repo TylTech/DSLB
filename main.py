@@ -15,7 +15,7 @@ if "temp_page" in st.session_state:
     st.session_state.page = st.session_state.temp_page
     del st.session_state.temp_page
 
-# 💅 Style tweaks
+# 💅 Style tweaks + Hide GitHub & Streamlit menu
 st.markdown("""
     <style>
     div[data-baseweb="radio"] > div {
@@ -35,9 +35,12 @@ st.markdown("""
         text-decoration: underline;
         color: black;
     }
-    /* 🔒 Hide GitHub footer link */
-    footer {visibility: hidden;}
-    .css-164nlkn {display: none;}  /* Extra layer for some Streamlit versions */
+
+    /* 🧼 Clean up Streamlit UI */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden; height: 0;}
+    footer:after {content: ""; display: none;}
+    a[href*="github.com"] {display: none !important;}
     </style>
 """, unsafe_allow_html=True)
 
