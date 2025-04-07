@@ -1,5 +1,6 @@
 import streamlit as st
 from weapons.weapons_page import show_weapons_page
+from effects.effects_page import show_effects_page
 from directions.directions_page import show_directions_page
 from gateposts.gateposts_page import show_gateposts_page
 from summons.summons_page import show_summons_page
@@ -43,6 +44,7 @@ with st.sidebar:
         "🏰 Welcome",
         "⚔️ Weapons",
         "🧭 Directions",
+        "💫 Spell & Skill Effects", 
         "🌀 Gateposts",
         "✨ Summons",
         "📖 Bestiary",
@@ -52,6 +54,7 @@ with st.sidebar:
         "🏰 Welcome",
         "⚔️ Weapons",
         "🧭 Directions",
+        "💫 Spell & Skill Effects",
         "🌀 Gateposts",
         "✨ Summons",
         "📖 Bestiary",
@@ -64,14 +67,16 @@ def show_welcome_page():
     st.title("🧙‍♂️ Welcome to DSL Buddy")
     st.markdown("""
         <div style='font-size:20px; margin-top:1rem;'>
-            Your personal buddy for all things DSL!  Explore weapons, areas, monsters, overpowered chracter combos, and more!
+            Your personal buddy for all things DSL!
         </div>
         <div style='margin-top:2rem;'>
     """, unsafe_allow_html=True)
 
     nav_links = [
+        
         ("⚔️ Manage your arsenal of awesome arms!", "⚔️ Weapons"),
         ("🧭 Zip through zones with ease!", "🧭 Directions"),
+        ("💫 Study the secrets of spells and skills!", "💫 Spell & Skill Effects"),
         ("🌀 Plan gateposts for smooth getaways!", "🌀 Gateposts"),
         ("✨ Summon creatures for companionship and sacrifice!", "✨ Summons"),
         ("📖 Browse the compendium of bestial lore!", "📖 Bestiary"),
@@ -99,6 +104,8 @@ elif page == "⚔️ Weapons":
     show_weapons_page()
 elif page == "🧭 Directions":
     show_directions_page()
+elif page == "💫 Spell & Skill Effects":
+    show_effects_page()
 elif page == "🌀 Gateposts":
     show_gateposts_page()
 elif page == "✨ Summons":
