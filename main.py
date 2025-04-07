@@ -41,8 +41,15 @@ st.markdown("""
     footer {visibility: hidden; height: 0;}
     footer:after {content: ""; display: none;}
     a[href*="github.com"] {display: none !important;}
+
+    /* 💣 Hide floating buttons (Streamlit Cloud icons) */
+    .stDeployButton {display: none !important;}
+    .st-emotion-cache-6qob1r {display: none !important;}
+    .st-emotion-cache-1n76uvr {display: none !important;}
+    .stActionButton {display: none !important;}
     </style>
 """, unsafe_allow_html=True)
+
 
 # 📍 Sidebar nav
 with st.sidebar:
