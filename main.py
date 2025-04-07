@@ -10,6 +10,11 @@ from moon.moon_page import show_moon_page
 
 st.set_page_config(page_title="DSL Buddy", layout="wide")
 
+# ✅ Handle welcome page button nav without breaking widget key binding
+if "temp_page" in st.session_state:
+    st.session_state.page = st.session_state.temp_page
+    del st.session_state.temp_page
+
 # 💅 Style tweaks
 st.markdown("""
     <style>
@@ -71,7 +76,7 @@ def show_welcome_page():
 
     for text, tab in nav_links:
         if st.button(text, key=tab):
-            st.session_state.page = tab
+            st.session_state.temp_page = tab
             st.rerun()
 
     st.markdown("""
