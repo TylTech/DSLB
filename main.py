@@ -10,11 +10,7 @@ from moon.moon_page import show_moon_page
 
 st.set_page_config(page_title="DSL Buddy", layout="wide")
 
-# Init session state
-if "page" not in st.session_state:
-    st.session_state["page"] = "🏰 Welcome"
-
-# Style tweaks
+# 💅 Style tweaks
 st.markdown("""
     <style>
     div[data-baseweb="radio"] > div {
@@ -37,10 +33,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar nav
+# 📍 Sidebar nav
 with st.sidebar:
     st.title("DSL Buddy")
-    st.session_state["page"] = st.radio("Choose a tab:", [
+    page = st.radio("Choose a tab:", [
         "🏰 Welcome",
         "⚔️ Weapons",
         "🧭 Directions",
@@ -50,19 +46,9 @@ with st.sidebar:
         "📖 Bestiary",
         "🧬 Race/Class Comparison",
         "🌕 Moon Tracker"
-    ], index=[
-        "🏰 Welcome",
-        "⚔️ Weapons",
-        "🧭 Directions",
-        "💫 Spell & Skill Effects",
-        "🌀 Gateposts",
-        "✨ Summons",
-        "📖 Bestiary",
-        "🧬 Race/Class Comparison",
-        "🌕 Moon Tracker"
-    ].index(st.session_state["page"]))
+    ], key="page")
 
-# Landing page
+# 🧙 Welcome screen
 def show_welcome_page():
     st.title("🧙‍♂️ Welcome to DSL Buddy")
     st.markdown("""
@@ -73,7 +59,6 @@ def show_welcome_page():
     """, unsafe_allow_html=True)
 
     nav_links = [
-        
         ("⚔️ Manage your arsenal of awesome arms!", "⚔️ Weapons"),
         ("🧭 Zip through zones with ease!", "🧭 Directions"),
         ("💫 Study the secrets of spells and skills!", "💫 Spell & Skill Effects"),
@@ -86,7 +71,7 @@ def show_welcome_page():
 
     for text, tab in nav_links:
         if st.button(text, key=tab):
-            st.session_state["page"] = tab
+            st.session_state.page = tab
             st.rerun()
 
     st.markdown("""
@@ -96,8 +81,7 @@ def show_welcome_page():
         </div>
     """, unsafe_allow_html=True)
 
-# Page logic
-page = st.session_state["page"]
+# 🧭 Page router
 if page == "🏰 Welcome":
     show_welcome_page()
 elif page == "⚔️ Weapons":
