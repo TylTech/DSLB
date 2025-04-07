@@ -91,7 +91,7 @@ def show_weapons_page():
                 filtered_df["Flag 2_lower"].isin(lower_flags)
             ]
 
-        display_columns = ["Weapon", "Type", "Dam", "Wt", "Noun", "Flag 1", "Flag 2", "1H/2H", "Roll", "Notes"]
+        display_columns = ["Weapon", "Type", "Dam", "Wt", "Noun", "Flag 1", "Flag 2", "1H/2H", "Roll", "Level", "Notes"]
 
         st.subheader("🗡️ Weapon Arsenal")
         st.data_editor(
@@ -106,6 +106,7 @@ def show_weapons_page():
                 "1H/2H": st.column_config.TextColumn("1H/2H", width="small"),
                 "Type": st.column_config.TextColumn("Type", width="small"),
                 "Roll": st.column_config.TextColumn("Roll", width="small"),
+                "Level": st.column_config.TextColumn("Level", width="small"),
                 "Noun": st.column_config.TextColumn("Noun", width="small"),
                 "Flag 1": st.column_config.TextColumn("Flag 1", width="small"),
                 "Flag 2": st.column_config.TextColumn("Flag 2", width="small"),
