@@ -9,11 +9,29 @@ from moon.moon_page import show_moon_page
 
 st.set_page_config(page_title="DSL Buddy", layout="wide")
 
+# Init session state
+if "page" not in st.session_state:
+    st.session_state["page"] = "🏰 Welcome"
+
 # Style tweaks
 st.markdown("""
     <style>
     div[data-baseweb="radio"] > div {
         margin-bottom: 1rem;
+    }
+    .stButton>button {
+        background: none;
+        color: #444;
+        font-size: 18px;
+        text-align: left;
+        padding: 0;
+        margin: 0 0 2px 0;
+        border: none;
+        cursor: pointer;
+    }
+    .stButton>button:hover {
+        text-decoration: underline;
+        color: black;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -21,51 +39,69 @@ st.markdown("""
 # Sidebar nav
 with st.sidebar:
     st.title("DSL Buddy")
-
-    page = st.radio("Choose a tab:", [
-        "🏠 Welcome",
-        "🌕 Moon Tracker",
+    st.session_state["page"] = st.radio("Choose a tab:", [
+        "🏰 Welcome",
         "⚔️ Weapons",
         "🧭 Directions",
-        "🚪 Gateposts",
-        "🪄 Summons",
+        "🌀 Gateposts",
+        "✨ Summons",
         "📖 Bestiary",
-        "🧬 Race/Class Comparison"
-    ])
+        "🧬 Race/Class Comparison",
+        "🌕 Moon Tracker"
+    ], index=[
+        "🏰 Welcome",
+        "⚔️ Weapons",
+        "🧭 Directions",
+        "🌀 Gateposts",
+        "✨ Summons",
+        "📖 Bestiary",
+        "🧬 Race/Class Comparison",
+        "🌕 Moon Tracker"
+    ].index(st.session_state["page"]))
 
-# Snazzy landing page
+# Landing page
 def show_welcome_page():
-    st.title("🎉 Welcome to DSL Buddy")
+    st.title("🧙‍♂️ Welcome to DSL Buddy")
     st.markdown("""
         <div style='font-size:20px; margin-top:1rem;'>
-            ✨ Your personal sidekick for all things DSL!  
-            Explore spells, weapons, monsters, and more — all in one place.
+            Your personal buddy for all things DSL!  Explore weapons, areas, monsters, overpowered chracter combos, and more!
         </div>
         <div style='margin-top:2rem;'>
-            <ul style='font-size:18px;'>
-                <li>🌙 Track the moon cycles</li>
-                <li>🗡️ Manage your weapons arsenal</li>
-                <li>📍 Navigate zones with clear directions</li>
-                <li>🚪 Plan gateposts and summons with ease</li>
-                <li>📚 Browse beasts in the bestiary</li>
-                <li>🧬 Compare races and classes side-by-side</li>
-            </ul>
+    """, unsafe_allow_html=True)
+
+    nav_links = [
+        ("⚔️ Manage your arsenal of awesome arms!", "⚔️ Weapons"),
+        ("🧭 Zip through zones with ease!", "🧭 Directions"),
+        ("🌀 Plan gateposts for smooth getaways!", "🌀 Gateposts"),
+        ("✨ Summon creatures for companionship and sacrifice!", "✨ Summons"),
+        ("📖 Browse the compendium of bestial lore!", "📖 Bestiary"),
+        ("🧬 Compare races and classes for mechanical domination!", "🧬 Race/Class Comparison"),
+        ("🌕 Track moon cycles for MAXIMUM GAINS!", "🌕 Moon Tracker"),
+    ]
+
+    for text, tab in nav_links:
+        if st.button(text, key=tab):
+            st.session_state["page"] = tab
+            st.rerun()
+
+    st.markdown("""
         </div>
         <div style='margin-top:3rem; font-size:16px; color:gray;'>
-            Built with love, coffee, and a whole lotta spell slots. 🧙‍♂️
+            © Tyltech, 2025. 🧙‍♂️👊
         </div>
     """, unsafe_allow_html=True)
 
 # Page logic
-if page == "🏠 Welcome":
+page = st.session_state["page"]
+if page == "🏰 Welcome":
     show_welcome_page()
 elif page == "⚔️ Weapons":
     show_weapons_page()
 elif page == "🧭 Directions":
     show_directions_page()
-elif page == "🚪 Gateposts":
+elif page == "🌀 Gateposts":
     show_gateposts_page()
-elif page == "🪄 Summons":
+elif page == "✨ Summons":
     show_summons_page()
 elif page == "📖 Bestiary":
     show_bestiary_page()
