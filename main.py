@@ -35,6 +35,9 @@ st.markdown("""
         text-decoration: underline;
         color: black;
     }
+    /* 🔒 Hide GitHub footer link */
+    footer {visibility: hidden;}
+    .css-164nlkn {display: none;}  /* Extra layer for some Streamlit versions */
     </style>
 """, unsafe_allow_html=True)
 
