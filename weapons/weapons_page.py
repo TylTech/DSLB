@@ -94,27 +94,12 @@ def show_weapons_page():
         display_columns = ["Weapon", "Type", "Dam", "Wt", "Noun", "Flag 1", "Flag 2", "1H/2H", "Roll", "Level", "Notes"]
 
         st.subheader("🗡️ Weapon Arsenal")
-        st.data_editor(
+        st.dataframe(
             filtered_df[display_columns],
             use_container_width=True,
-            hide_index=True,
-            disabled=True,
-            column_config={
-                "Weapon": st.column_config.TextColumn("Weapon", width="medium"),
-                "Wt": st.column_config.NumberColumn("Wt", width="small"),
-                "Dam": st.column_config.NumberColumn("Dam", width="small"),
-                "1H/2H": st.column_config.TextColumn("1H/2H", width="small"),
-                "Type": st.column_config.TextColumn("Type", width="small"),
-                "Roll": st.column_config.TextColumn("Roll", width="small"),
-                "Level": st.column_config.TextColumn("Level", width="small"),
-                "Noun": st.column_config.TextColumn("Noun", width="small"),
-                "Flag 1": st.column_config.TextColumn("Flag 1", width="small"),
-                "Flag 2": st.column_config.TextColumn("Flag 2", width="small"),
-                "Notes": st.column_config.TextColumn("Notes", width="small"),
-            }
-
-
+            hide_index=True
         )
+
 
         st.subheader("📋 Add New Weapon")
         with st.expander("Paste Weapon Identification"):
