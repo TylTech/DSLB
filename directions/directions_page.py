@@ -89,7 +89,7 @@ def show_directions_page():
 
         # --- Add New Area ---
         st.subheader("➕ Add New Area")
-        with st.expander("Paste area info to add a new entry"):
+        with st.expander("Enter area info to add a new entry"):
             with st.form("add_area_form"):
                 col1, col2 = st.columns(2)
                 new_area = col1.text_input("Area")
