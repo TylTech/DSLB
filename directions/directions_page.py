@@ -27,7 +27,18 @@ def strip_leading_articles(name):
     return re.sub(r"^(a |the )", "", name.strip(), flags=re.IGNORECASE)
 
 def show_directions_page():
-    st.header("🧭 Directions")
+    # Add this just after the function starts
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.header("🧭 Directions")
+    with col2:
+        st.markdown("<div style='padding-top: 18px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
 
     try:
         response = supabase.table("directions").select("*").execute()
@@ -89,7 +100,7 @@ def show_directions_page():
 
         # --- Add New Area ---
         st.subheader("➕ Add New Area")
-        with st.expander("Enter area info to add a new entry"):
+        with st.expander("Add New Area"):
             with st.form("add_area_form"):
                 col1, col2 = st.columns(2)
                 new_area = col1.text_input("Area")
@@ -126,7 +137,7 @@ def show_directions_page():
         if selected_area:
             selected_row = df[df["Area"] == selected_area].iloc[0]
 
-            with st.expander("✏️ Edit This Area"):
+            with st.expander("Edit This Area"):
                 with st.form("edit_area_form"):
                     col1, col2 = st.columns(2)
                     starting_point = col1.text_input("Starting Point", selected_row["Starting Point"])

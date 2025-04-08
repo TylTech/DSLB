@@ -3,7 +3,16 @@ import pandas as pd
 from shared.supabase_client import supabase
 
 def show_summons_page():
-    st.header("✨ Summons")
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.header("✨ Summons")
+    with col2:
+        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     try:
         response = supabase.table("summons").select("*").execute()
@@ -31,7 +40,7 @@ def show_summons_page():
         )
 
         st.subheader("➕ Add New Summon")
-        with st.expander("Add New Entry"):
+        with st.expander("Add New Summon"):
             with st.form("add_summon_form"):
                 col1, col2 = st.columns(2)
                 new_summon = col1.text_input("Summon")

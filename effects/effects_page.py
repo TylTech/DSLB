@@ -3,7 +3,16 @@ import pandas as pd
 from shared.supabase_client import supabase
 
 def show_effects_page():
-    st.header("💫 Spell & Skill Effects")
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.header("💫 Spell & Skill Effects")
+    with col2:
+        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     try:
         response = supabase.table("effects").select("*").execute()
@@ -41,7 +50,7 @@ def show_effects_page():
             hide_index=True
         )
 
-        st.subheader("➕ Add New Effect")
+        st.subheader("➕ Add New Entry")
         with st.expander("Add New Entry"):
             with st.form("add_effect_form"):
                 new_name = st.text_input("Name")
@@ -61,7 +70,7 @@ def show_effects_page():
                     st.success(f"{new_name} added!")
                     st.rerun()
 
-        st.subheader("✏️ Edit Existing Effect")
+        st.subheader("✏️ Edit Existing Entry")
         editable_names = filtered_df["Name"].dropna().sort_values().tolist()
         selected_name = st.selectbox("Select entry to edit", editable_names)
 

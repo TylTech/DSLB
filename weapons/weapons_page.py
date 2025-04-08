@@ -62,7 +62,16 @@ def parse_weapon_identification(lore):
 
 
 def show_weapons_page():
-    st.header("⚔️ Weapons")
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.header("⚔️ Weapons")
+    with col2:
+        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     if "just_added_weapon" in st.session_state:
         st.toast(f"{st.session_state['just_added_weapon']} added to repository!", icon="🗡️")
@@ -123,7 +132,7 @@ def show_weapons_page():
         st.subheader("🗡️ Weapon Arsenal")
         st.dataframe(filtered_df[display_columns], use_container_width=True, hide_index=True)
 
-        st.subheader("📋 Add New Weapon")
+        st.subheader("➕ Add New Weapon")
         with st.expander("Paste Weapon Identification"):
             pasted_text = st.text_area("Paste the weapon identification text here")
             if st.button("Add Weapon"):
@@ -137,7 +146,7 @@ def show_weapons_page():
                         st.error("Failed to add weapon to database.")
                         st.exception(e)
 
-        with st.expander("Manually Enter Weapon Info"):
+        with st.expander("Manually Enter Weapon Information"):
             with st.form("manual_weapon_form"):
                 col1, col2 = st.columns(2)
                 weapon_name = col1.text_input("Weapon", key="manual_weapon_name")
@@ -182,7 +191,7 @@ def show_weapons_page():
                         st.error("Failed to add weapon manually.")
                         st.exception(e)
 
-        st.subheader("🛠️ Edit Weapon Entry")
+        st.subheader("✏️ Edit Weapon Entry")
         weapon_names = df["Weapon"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
         selected_weapon_name = st.selectbox("Select weapon to edit", weapon_names)
 
@@ -191,7 +200,7 @@ def show_weapons_page():
             if not match.empty:
                 selected_row = match.iloc[0]
 
-                with st.expander("✏️ Edit This Weapon"):
+                with st.expander("Edit This Weapon"):
                     with st.form("edit_weapon_form"):
                         col1, col2 = st.columns(2)
                         weapon_name = col1.text_input("Weapon", selected_row["Weapon"])

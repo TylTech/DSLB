@@ -67,14 +67,14 @@ def show_welcome_page():
     """, unsafe_allow_html=True)
 
     nav_links = [
-        ("⚔️ Manage your arsenal of awesome arms!", "⚔️ Weapons"),
-        ("🧭 Zip through zones with ease!", "🧭 Directions"),
-        ("💫 Study the secrets of spells and skills!", "💫 Spell & Skill Effects"),
-        ("🌀 Plan gateposts for smooth getaways!", "🌀 Gateposts"),
-        ("✨ Summon creatures for companionship and sacrifice!", "✨ Summons"),
-        ("📖 Browse the compendium of bestial lore!", "📖 Bestiary"),
-        ("🧬 Compare races and classes for mechanical domination!", "🧬 Race/Class Comparison"),
-        ("🌕 Track moon cycles for MAXIMUM GAINS!", "🌕 Moon Tracker"),
+        ("⚔️ Weapons!", "⚔️ Weapons"),
+        ("🧭 Directions!", "🧭 Directions"),
+        ("💫 Spell & Skill Effects!", "💫 Spell & Skill Effects"),
+        ("🌀 Gateposts!", "🌀 Gateposts"),
+        ("✨ Summons!", "✨ Summons"),
+        ("📖 Bestiary!", "📖 Bestiary"),
+        ("🧬 Race/Class Comparison!", "🧬 Race/Class Comparison"),
+        ("🌕 Moon Tracker FOR MAXIMUM GAINS!", "🌕 Moon Tracker"),
     ]
 
     for text, tab in nav_links:

@@ -37,10 +37,10 @@ def show_bestiary_page():
     st.divider()
     st.subheader("➕ Add New Creature")
 
-    with st.expander("📋 Paste Creaturelore", expanded=False):
+    with st.expander("Paste Creaturelore", expanded=False):
         paste_input = st.text_area("Paste Creaturelore", height=150)
 
-    with st.expander("🛠️ Enter Creature Info Manually", expanded=False):
+    with st.expander("Manually Enter Creature Information", expanded=False):
         new_name = st.text_input("Name")
         new_level = st.text_input("Level")
         new_zone = st.text_input("Zone")
@@ -63,7 +63,7 @@ def show_bestiary_page():
     st.divider()
     st.subheader("✏️ Edit Creature")
 
-    with st.expander("🧩 Edit Existing Creature", expanded=False):
+    with st.expander("Edit Existing Creature", expanded=False):
         if not df.empty:
             creature_to_edit = st.selectbox("Choose Creature", options=df["Name"].tolist())
             selected_row = df[df["Name"] == creature_to_edit].iloc[0]
