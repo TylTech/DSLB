@@ -3,7 +3,15 @@ import pandas as pd
 from shared.supabase_client import supabase
 
 def show_bestiary_page():
-    st.markdown("## 🐲 Bestiary")
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.markdown("## 🐲 Bestiary")
+    with col2:
+        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     @st.cache_data(ttl=60)
     def load_bestiary():
@@ -14,11 +22,11 @@ def show_bestiary_page():
 
     if not df.empty:
         df_display = df.copy()
-        df_display["Lore"] = df_display["Lore"]  
+        df_display["Lore"] = df_display["Lore"]
 
         st.subheader("📖 Bestiary Table")
         st.data_editor(
-            df_display[["Name", "Level", "Zone", "Health", "Lore"]],
+            df_display[["Name", "Level", "Zone", "Health", "Key Words", "Notes", "Lore"]],
             use_container_width=True,
             hide_index=True,
             disabled=True,
@@ -37,14 +45,17 @@ def show_bestiary_page():
     st.divider()
     st.subheader("➕ Add New Creature")
 
-    with st.expander("Paste Creaturelore", expanded=False):
+    with st.expander("Add New Creature", expanded=False):
+        st.markdown("#### 📋 Paste Creaturelore")
         paste_input = st.text_area("Paste Creaturelore", height=150)
 
-    with st.expander("Manually Enter Creature Information", expanded=False):
+        st.markdown("#### 🛠️ Manually Enter Creature Information")
         new_name = st.text_input("Name")
         new_level = st.text_input("Level")
         new_zone = st.text_input("Zone")
         new_health = st.text_input("Health")
+        new_keywords = st.text_input("Key Words")
+        new_notes = st.text_input("Notes")
 
         if st.button("Add Creature"):
             if new_name and new_level and new_zone and new_health:
@@ -53,12 +64,15 @@ def show_bestiary_page():
                     "Level": new_level,
                     "Zone": new_zone,
                     "Health": new_health,
+                    "Key Words": new_keywords,
+                    "Notes": new_notes,
                     "Lore": paste_input or "Lore coming soon..."
                 }).execute()
                 st.success(f"Creature '{new_name}' added!")
                 st.experimental_rerun()
             else:
-                st.warning("Please fill in all fields.")
+                st.warning("Please fill in all required fields.")
+
 
     st.divider()
     st.subheader("✏️ Edit Creature")
@@ -72,6 +86,8 @@ def show_bestiary_page():
             edit_level = st.text_input("Level", value=selected_row["Level"])
             edit_zone = st.text_input("Zone", value=selected_row["Zone"])
             edit_health = st.text_input("Health", value=selected_row["Health"])
+            edit_keywords = st.text_input("Key Words", value=selected_row.get("Key Words", ""))
+            edit_notes = st.text_input("Notes", value=selected_row.get("Notes", ""))
 
             col1, col2 = st.columns(2)
             with col1:
@@ -80,7 +96,9 @@ def show_bestiary_page():
                         "Name": edit_name,
                         "Level": edit_level,
                         "Zone": edit_zone,
-                        "Health": edit_health
+                        "Health": edit_health,
+                        "Key Words": edit_keywords,
+                        "Notes": edit_notes
                     }).eq("id", selected_row["id"]).execute()
                     st.success(f"Creature '{edit_name}' updated!")
                     st.experimental_rerun()

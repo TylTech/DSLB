@@ -39,8 +39,7 @@ def show_gateposts_page():
             key="gatepost_editor"
         )
 
-        st.subheader("➕ Add New Gatepost")
-        with st.expander("Add New Gatepost"):
+        with st.expander("➕ Add New Gatepost"):
             with st.form("add_gatepost_form"):
                 col1, col2 = st.columns(2)
                 new_gatepost = col1.text_input("Gatepost")

@@ -2,6 +2,9 @@ import streamlit as st
 from shared.supabase_client import supabase
 import pandas as pd
 import re
+from shared.utils import strip_leading_articles
+from shared.utils import strip_leading_articles_series
+
 
 def parse_weapon_identification(lore):
     try:
@@ -15,7 +18,10 @@ def parse_weapon_identification(lore):
         key_words = weapon_name
         name_lower = weapon_name.lower()
 
-        is_special_material = "arcanium" in name_lower or "fine alloy" in name_lower
+        # 🔍 Detect if it's a special material weapon
+        special_material_keywords = ["arcanium", "fine alloy", "dreadwood"]
+        is_special_material = any(material in name_lower for material in special_material_keywords)
+
 
         weapon_type_match = re.search(r"weapon type is (\w+)", full_text, re.IGNORECASE)
         weapon_type = weapon_type_match.group(1).capitalize() if weapon_type_match else ""
@@ -31,15 +37,18 @@ def parse_weapon_identification(lore):
 
         one_or_two_handed = "2H" if "two-handed" in full_text.lower() else "1H"
 
-        flag_1 = ""
-        flag_2 = ""
-        if not is_special_material:
+        # 🛑 If special material, skip flags and set Physical noun
+        if is_special_material:
+            flag_1 = ""
+            flag_2 = ""
+            noun = "Physical"
+        else:
+            # Otherwise, parse flags normally
             flag_line = next((l for l in lines if "weapons flags" in l.lower()), "")
             flag_parts = flag_line.split(":", 1)[1].strip().split() if ":" in flag_line else []
             flag_1 = flag_parts[0].capitalize() if len(flag_parts) > 0 else ""
             flag_2 = flag_parts[1].capitalize() if len(flag_parts) > 1 else ""
-
-        noun = "Physical" if is_special_material else ""
+            noun = ""  # leave noun blank for normal weapons
 
         return {
             "Weapon": weapon_name,
@@ -61,6 +70,7 @@ def parse_weapon_identification(lore):
         return None
 
 
+
 def show_weapons_page():
     col1, col2 = st.columns([8, 1])
     with col1:
@@ -72,6 +82,10 @@ def show_weapons_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # Sync selected weapon if override exists
+    if "selected_weapon_override" in st.session_state:
+        st.session_state["selected_weapon_name"] = st.session_state["selected_weapon_override"]
+        del st.session_state["selected_weapon_override"]
 
     if "just_added_weapon" in st.session_state:
         st.toast(f"{st.session_state['just_added_weapon']} added to repository!", icon="🗡️")
@@ -87,33 +101,65 @@ def show_weapons_page():
             st.warning("No weapons found in the database.")
             return
 
-        df = pd.DataFrame(data).sort_values(by="Weapon", key=lambda col: col.str.lower())
+        df = pd.DataFrame(data).sort_values(by="Weapon", key=strip_leading_articles_series)
         df.fillna("", inplace=True)
         df["Dam"] = pd.to_numeric(df["Dam"], errors="coerce")
         df["Wt"] = pd.to_numeric(df["Wt"], errors="coerce")
 
-        filtered_df = df.copy()
-
-        search_text = st.text_input("🔎 Search Weapon Name")
+        # Add lowercase columns BEFORE copying to filtered_df
         df["Type_lower"] = df["Type"].str.lower()
         df["1H/2H_lower"] = df["1H/2H"].str.lower()
         df["Noun_lower"] = df["Noun"].str.lower()
         df["Flag 1_lower"] = df["Flag 1"].str.lower()
         df["Flag 2_lower"] = df["Flag 2"].str.lower()
 
+
+        filtered_df = df.copy()
+
+        search_text = st.text_input(
+            label="",
+            placeholder="🔎 Search Weapons",
+            label_visibility="collapsed"
+        ).strip().lower()
+
+
         if search_text:
             filtered_df = filtered_df[filtered_df["Weapon"].str.contains(search_text, case=False, na=False)]
 
         with st.expander("🔍 Filter Weapons"):
             col1, col2, col3, col4 = st.columns(4)
-            types = col1.multiselect("Type", sorted(df["Type"].dropna().str.capitalize().unique()), key="filter_types")
-            one_h_two_h = col2.multiselect("1H/2H", sorted(df["1H/2H"].dropna().unique()), key="filter_handed")
-            nouns = col3.multiselect("Noun", sorted(df["Noun"].dropna().str.capitalize().unique()), key="filter_nouns")
-            flags = col4.multiselect(
-                "Flags",
-                sorted(pd.concat([df["Flag 1"], df["Flag 2"]]).dropna().str.capitalize().unique()),
-                key="filter_flags"
+            types = col1.multiselect(
+                options=sorted(df["Type"].dropna().str.capitalize().unique()),
+                label="Type",
+                key="filter_types",
+                placeholder="Type",
+                label_visibility="collapsed"
             )
+
+            nouns = col2.multiselect(
+                options=sorted(df["Noun"].dropna().str.capitalize().unique()),
+                label="Noun",
+                key="filter_nouns",
+                placeholder="Noun",
+                label_visibility="collapsed"
+            )
+
+            flags = col3.multiselect(
+                options=sorted(pd.concat([df["Flag 1"], df["Flag 2"]]).dropna().str.capitalize().unique()),
+                label="Flags",
+                key="filter_flags",
+                placeholder="Flags",
+                label_visibility="collapsed"
+            )
+
+            one_h_two_h = col4.multiselect(
+                options=sorted(df["1H/2H"].dropna().unique()),
+                label="1H/2H",
+                key="filter_handed",
+                placeholder="1H/2H",
+                label_visibility="collapsed"
+            )
+
 
         if types:
             filtered_df = filtered_df[filtered_df["Type_lower"].isin([t.lower() for t in types])]
@@ -132,10 +178,11 @@ def show_weapons_page():
         st.subheader("🗡️ Weapon Arsenal")
         st.dataframe(filtered_df[display_columns], use_container_width=True, hide_index=True)
 
-        st.subheader("➕ Add New Weapon")
-        with st.expander("Paste Weapon Identification"):
+
+        with st.expander("➕ Add New Weapon", expanded=False):
+            st.markdown("#### 📋 Paste Weapon Identification")
             pasted_text = st.text_area("Paste the weapon identification text here")
-            if st.button("Add Weapon"):
+            if st.button("Add Weapon from Pasted Text"):
                 weapon_data = parse_weapon_identification(pasted_text)
                 if weapon_data:
                     try:
@@ -146,7 +193,7 @@ def show_weapons_page():
                         st.error("Failed to add weapon to database.")
                         st.exception(e)
 
-        with st.expander("Manually Enter Weapon Information"):
+            st.markdown("#### 🛠️ Manually Enter Weapon Information")
             with st.form("manual_weapon_form"):
                 col1, col2 = st.columns(2)
                 weapon_name = col1.text_input("Weapon", key="manual_weapon_name")
@@ -167,7 +214,7 @@ def show_weapons_page():
                 one_or_two_handed = st.selectbox("1H/2H", ["1H", "2H"])
                 notes = st.text_area("Notes")
 
-                submitted = st.form_submit_button("➕ Add Weapon")
+                submitted = st.form_submit_button("➕ Add Weapon Manually")
                 if submitted:
                     manual_data = {
                         "Weapon": weapon_name,
@@ -191,43 +238,42 @@ def show_weapons_page():
                         st.error("Failed to add weapon manually.")
                         st.exception(e)
 
-        st.subheader("✏️ Edit Weapon Entry")
-        weapon_names = df["Weapon"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
-        selected_weapon_name = st.selectbox("Select weapon to edit", weapon_names)
 
-        if selected_weapon_name:
-            match = df[df["Weapon"] == selected_weapon_name]
-            if not match.empty:
-                selected_row = match.iloc[0]
+                # ✏️ Edit Section
 
-                with st.expander("Edit This Weapon"):
-                    with st.form("edit_weapon_form"):
-                        col1, col2 = st.columns(2)
-                        weapon_name = col1.text_input("Weapon", selected_row["Weapon"])
-                        weapon_type = col2.text_input("Type", selected_row["Type"])
 
-                        col3, col4 = st.columns(2)
-                        key_words = col3.text_input("Key Words", selected_row["Key Words"])
-                        one_h_two_h = col4.selectbox("1H/2H", ["1H", "2H"], index=["1H", "2H"].index(selected_row["1H/2H"]))
+        if not df.empty:
+            weapon_options = df["Weapon"].dropna().sort_values(key=strip_leading_articles_series).tolist()
+            if "selected_weapon_name" not in st.session_state:
+                st.session_state["selected_weapon_name"] = weapon_options[0] if weapon_options else ""
 
-                        col5, col6 = st.columns(2)
-                        dam = col5.number_input("Damage", value=int(selected_row["Dam"]) if str(selected_row["Dam"]).strip().isdigit() else 0, step=1)
-                        wt = col6.number_input("Weight", value=int(selected_row["Wt"]) if str(selected_row["Wt"]).strip().isdigit() else 0, step=1)
+            with st.expander("✏️ Edit Existing Weapon", expanded=False):
+                selected_weapon_name = st.selectbox(
+                    "Choose Weapon",
+                    options=weapon_options,
+                    key="selected_weapon_name"
+                )
 
-                        col7, col8 = st.columns(2)
-                        roll = col7.text_input("Roll", selected_row["Roll"])
-                        lvl = col8.number_input("Level", value=int(selected_row["Lvl"]) if str(selected_row["Lvl"]).strip().isdigit() else 0, step=1)
 
-                        col9, col10 = st.columns(2)
-                        noun = col9.text_input("Noun", selected_row["Noun"])
-                        flag_1 = col10.text_input("Flag 1", selected_row["Flag 1"])
+                selected_row = df[df["Weapon"] == selected_weapon_name].iloc[0]
 
-                        col11, col12 = st.columns(2)
-                        flag_2 = col11.text_input("Flag 2", selected_row["Flag 2"])
-                        notes = col12.text_input("Notes", selected_row["Notes"])
+                with st.form("edit_weapon_form"):
+                    weapon_name = st.text_input("Weapon", value=selected_row["Weapon"])
+                    weapon_type = st.text_input("Type", value=selected_row["Type"])
+                    key_words = st.text_input("Key Words", value=selected_row["Key Words"])
+                    one_h_two_h = st.selectbox("1H/2H", ["1H", "2H"], index=["1H", "2H"].index(selected_row["1H/2H"]))
+                    dam = st.number_input("Damage", value=int(selected_row["Dam"]) if str(selected_row["Dam"]).strip().isdigit() else 0, step=1)
+                    wt = st.number_input("Weight", value=int(selected_row["Wt"]) if str(selected_row["Wt"]).strip().isdigit() else 0, step=1)
+                    roll = st.text_input("Roll", value=selected_row["Roll"])
+                    lvl = st.number_input("Level", value=int(selected_row["Lvl"]) if str(selected_row["Lvl"]).strip().isdigit() else 0, step=1)
+                    noun = st.text_input("Noun", value=selected_row["Noun"])
+                    flag_1 = st.text_input("Flag 1", value=selected_row["Flag 1"])
+                    flag_2 = st.text_input("Flag 2", value=selected_row["Flag 2"])
+                    notes = st.text_input("Notes", value=selected_row["Notes"])
 
-                        submitted = st.form_submit_button("💾 Save Changes")
-                        if submitted:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.form_submit_button("💾 Save Changes"):
                             update_payload = {
                                 "Weapon": weapon_name,
                                 "Key Words": key_words,
@@ -245,20 +291,28 @@ def show_weapons_page():
                             try:
                                 supabase.table("weapons").update(update_payload).eq("id", selected_row["id"]).execute()
                                 st.success(f"'{weapon_name}' updated successfully!")
+                                st.session_state["selected_weapon_override"] = weapon_name
                                 st.rerun()
                             except Exception as e:
                                 st.error("Failed to update weapon.")
                                 st.exception(e)
 
-                with st.expander("🗑️ Delete This Weapon"):
-                    if st.button("Delete Weapon"):
-                        try:
-                            supabase.table("weapons").delete().eq("id", selected_row["id"]).execute()
-                            st.success(f"'{selected_weapon_name}' deleted successfully!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error("Failed to delete weapon.")
-                            st.exception(e)
+                    with col2:
+                        if st.form_submit_button("🗑️ Delete Weapon"):
+                            try:
+                                supabase.table("weapons").delete().eq("id", selected_row["id"]).execute()
+                                st.success(f"'{selected_weapon_name}' deleted successfully!")
+                                weapon_options = df["Weapon"].dropna().sort_values(key=strip_leading_articles_series).tolist()
+                                st.session_state["selected_weapon_override"] = weapon_options[0] if weapon_options else ""
+                                st.rerun()
+                            except Exception as e:
+                                st.error("Failed to delete weapon.")
+                                st.exception(e)
+        else:
+            st.info("No weapons available to edit.")
+
+
+
 
     except Exception as e:
         st.error("Failed to load or update weapons from Supabase.")

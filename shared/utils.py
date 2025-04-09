@@ -1,6 +1,10 @@
-# Stuff like:
-# ignore_articles()
-# extract_number()
-# format_directions()
-# parse_weapon_identification()
-# Any sorting helpers
+import re
+import pandas as pd
+
+def strip_leading_articles(text):
+    """Remove leading 'a', 'an', or 'the' (case-insensitive) from a single string."""
+    return re.sub(r"^(a |an |the )", "", text.strip(), flags=re.IGNORECASE)
+
+def strip_leading_articles_series(series: pd.Series):
+    """Apply article stripping to a Pandas Series of strings (for sorting)."""
+    return series.str.lower().map(strip_leading_articles)

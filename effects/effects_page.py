@@ -35,8 +35,8 @@ def show_effects_page():
         df["Notes"] = df["Notes"].str.replace(r"\\n|/n", "\n", regex=True)
 
         # 🔀 Filter toggle: Spell / Skill / Both
-        st.subheader("🔍 Filter by Type")
-        type_filter = st.radio("Choose effect type:", ["Spell", "Skill", "Both"], horizontal=True)
+        with st.expander("🔍 Filter by Type", expanded=False):
+            type_filter = st.radio("Effect type:", ["Spell", "Skill", "Both"], horizontal=True, label_visibility="collapsed")
 
         if type_filter != "Both":
             filtered_df = df[df["Type"].str.lower() == type_filter.lower()]
@@ -50,8 +50,7 @@ def show_effects_page():
             hide_index=True
         )
 
-        st.subheader("➕ Add New Entry")
-        with st.expander("Add New Entry"):
+        with st.expander("➕ Add New Effect"):
             with st.form("add_effect_form"):
                 new_name = st.text_input("Name")
                 new_type = st.selectbox("Type", ["Spell", "Skill"])
@@ -70,13 +69,13 @@ def show_effects_page():
                     st.success(f"{new_name} added!")
                     st.rerun()
 
-        st.subheader("✏️ Edit Existing Entry")
-        editable_names = filtered_df["Name"].dropna().sort_values().tolist()
-        selected_name = st.selectbox("Select entry to edit", editable_names)
+ 
+        with st.expander("✏️ Edit Existing Effect", expanded=False):
+            editable_names = filtered_df["Name"].dropna().sort_values().tolist()
+            selected_name = st.selectbox("Choose Entry", editable_names)
 
-        if selected_name:
-            row = df[df["Name"] == selected_name].iloc[0]
-            with st.expander("Edit This Entry"):
+            if selected_name:
+                row = df[df["Name"] == selected_name].iloc[0]
                 with st.form("edit_effect_form"):
                     name = st.text_input("Name", row["Name"])
                     effect = st.text_area("Effects", row["Effects"])
@@ -84,22 +83,25 @@ def show_effects_page():
                     notes = st.text_area("Notes", row["Notes"])
                     type_val = st.selectbox("Type", ["Spell", "Skill"], index=0 if row["Type"] == "Spell" else 1)
 
-                    if st.form_submit_button("💾 Save Changes"):
-                        supabase.table("effects").update({
-                            "Name": name,
-                            "Effects": effect,
-                            "Duration": duration,
-                            "Notes": notes,
-                            "Type": type_val
-                        }).eq("Name", selected_name).execute()
-                        st.success(f"{selected_name} updated successfully!")
-                        st.rerun()
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.form_submit_button("💾 Save Changes"):
+                            supabase.table("effects").update({
+                                "Name": name,
+                                "Effects": effect,
+                                "Duration": duration,
+                                "Notes": notes,
+                                "Type": type_val
+                            }).eq("Name", selected_name).execute()
+                            st.success(f"{selected_name} updated successfully!")
+                            st.rerun()
 
-            with st.expander("🗑️ Delete This Entry"):
-                if st.button("Delete Entry"):
-                    supabase.table("effects").delete().eq("Name", selected_name).execute()
-                    st.success(f"{selected_name} deleted.")
-                    st.rerun()
+                    with col2:
+                        if st.form_submit_button("🗑️ Delete Entry"):
+                            supabase.table("effects").delete().eq("Name", selected_name).execute()
+                            st.success(f"{selected_name} deleted.")
+                            st.rerun()
+
 
     except Exception as e:
         st.error("Failed to load effects data from Supabase.")

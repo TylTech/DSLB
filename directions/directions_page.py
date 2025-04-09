@@ -54,13 +54,32 @@ def show_directions_page():
             df.rename(columns={"Gate Posts": "Gateposts"}, inplace=True)
 
         # 🔍 Search and Filter
-        search_query = st.text_input("🔍 Search Areas", "").strip().lower()
-        continents = sorted(df["Continent"].dropna().unique())
-        continents.insert(0, "All")
-        selected_continent = st.selectbox("🌍 Filter by Continent", continents)
+        search_query = st.text_input(
+            label="",
+            placeholder="🔍 Search Areas",
+            label_visibility="collapsed"
+        ).strip().lower()
 
+        # Build options list: placeholder first, then actual options
+        continents = sorted(df["Continent"].dropna().unique())
+        options_with_placeholder = ["🌍 Filter by Continent"] + ["All"] + continents
+
+        selected_option = st.selectbox(
+            label="",
+            options=options_with_placeholder,
+            index=0,
+        )
+
+        # Filter logic
+        if selected_option == "🌍 Filter by Continent":
+            selected_continent = "All"
+        else:
+            selected_continent = selected_option
+
+        # Apply filter
         if selected_continent != "All":
             df = df[df["Continent"] == selected_continent]
+
 
         if search_query:
             df = df[df["Area"].str.lower().str.contains(search_query)]
@@ -71,7 +90,7 @@ def show_directions_page():
         st.subheader(f"🗺️ Areas ({'All Continents' if selected_continent == 'All' else selected_continent})")
 
         scroll_html = """
-        <div style='max-height: 650px; overflow-y: auto; padding-right: 10px; font-family: sans-serif; font-size: 14px;'>
+        <div style='max-height: 700px; overflow-y: auto; padding-right: 10px; font-family: sans-serif; font-size: 14px;'>
         """
 
         for _, row in df.iterrows():
@@ -96,11 +115,11 @@ def show_directions_page():
             """
 
         scroll_html += "</div>"
-        components.html(scroll_html, height=700, scrolling=True)
+        components.html(scroll_html, height=700, scrolling=False)
 
         # --- Add New Area ---
-        st.subheader("➕ Add New Area")
-        with st.expander("Add New Area"):
+
+        with st.expander("➕ Add New Area"):
             with st.form("add_area_form"):
                 col1, col2 = st.columns(2)
                 new_area = col1.text_input("Area")
@@ -130,14 +149,15 @@ def show_directions_page():
                         st.exception(e)
 
         # --- Edit Existing Area ---
-        st.subheader("✏️ Edit Existing Area")
-        area_list = df["Area"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
-        selected_area = st.selectbox("Select area to edit", area_list)
 
-        if selected_area:
-            selected_row = df[df["Area"] == selected_area].iloc[0]
 
-            with st.expander("Edit This Area"):
+        with st.expander("✏️ Edit Existing Area", expanded=False):
+            area_list = df["Area"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
+            selected_area = st.selectbox("Choose Area", area_list)
+
+            if selected_area:
+                selected_row = df[df["Area"] == selected_area].iloc[0]
+
                 with st.form("edit_area_form"):
                     col1, col2 = st.columns(2)
                     starting_point = col1.text_input("Starting Point", selected_row["Starting Point"])
@@ -145,34 +165,43 @@ def show_directions_page():
                     gateposts = st.text_input("Gateposts", selected_row["Gateposts"])
                     levels = st.text_input("Levels", selected_row["Levels"])
                     align = st.text_input("Align", selected_row["Align"])
-                    continent = st.selectbox("Continent", continents[1:], index=continents[1:].index(selected_row["Continent"]))
+                    continent_options = continents[1:]  # Remove placeholder
+                    selected_continent_value = selected_row["Continent"]
 
-                    if st.form_submit_button("💾 Save Changes"):
-                        update_payload = {
-                            "Starting Point": starting_point,
-                            "Directions": directions,
-                            "Gateposts": gateposts,
-                            "Levels": levels,
-                            "Align": align,
-                            "Continent": continent
-                        }
-                        try:
-                            supabase.table("directions").update(update_payload).eq("Area", selected_area).execute()
-                            st.success(f"'{selected_area}' updated successfully!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error("Failed to update area.")
-                            st.exception(e)
+                    # Default to first option if current value is missing
+                    default_index = continent_options.index(selected_continent_value) if selected_continent_value in continent_options else 0
 
-            with st.expander("🗑️ Delete This Area"):
-                if st.button("Delete Area"):
-                    try:
-                        supabase.table("directions").delete().eq("Area", selected_area).execute()
-                        st.success(f"'{selected_area}' deleted successfully!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error("Failed to delete area.")
-                        st.exception(e)
+                    continent = st.selectbox("Continent", continent_options, index=default_index)
+
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.form_submit_button("💾 Save Changes"):
+                            update_payload = {
+                                "Starting Point": starting_point,
+                                "Directions": directions,
+                                "Gateposts": gateposts,
+                                "Levels": levels,
+                                "Align": align,
+                                "Continent": continent
+                            }
+                            try:
+                                supabase.table("directions").update(update_payload).eq("Area", selected_area).execute()
+                                st.success(f"'{selected_area}' updated successfully!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error("Failed to update area.")
+                                st.exception(e)
+                    with col2:
+                        if st.form_submit_button("🗑️ Delete Area"):
+                            try:
+                                supabase.table("directions").delete().eq("Area", selected_area).execute()
+                                st.success(f"'{selected_area}' deleted successfully!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error("Failed to delete area.")
+                                st.exception(e)
+
 
     except Exception as e:
         st.error("Failed to load directions data from Supabase.")
