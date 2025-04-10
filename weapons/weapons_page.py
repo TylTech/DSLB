@@ -80,12 +80,18 @@ def show_weapons_page():
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("⚔️ Weapons")
+        search_text = st.text_input(
+            label="",
+            placeholder="🔎 Search Weapons",
+            label_visibility="collapsed"
+        ).strip().lower()
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
 
     # Sync selected weapon if override exists
     if "selected_weapon_override" in st.session_state:
@@ -120,13 +126,6 @@ def show_weapons_page():
 
 
         filtered_df = df.copy()
-
-        search_text = st.text_input(
-            label="",
-            placeholder="🔎 Search Weapons",
-            label_visibility="collapsed"
-        ).strip().lower()
-
 
         if search_text:
             filtered_df = filtered_df[filtered_df["Weapon"].str.contains(search_text, case=False, na=False)]

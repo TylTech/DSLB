@@ -30,7 +30,14 @@ def show_directions_page():
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🧭 Directions")
+        search_term = st.text_input(
+            label="",
+            placeholder="🔎 Search Areas",
+            label_visibility="collapsed"
+        ).strip().lower()
     with col2:
+        # home button block
+
         st.markdown("<div style='padding-top: 18px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
@@ -52,12 +59,6 @@ def show_directions_page():
 
         df["SortName"] = df["Area"].apply(strip_leading_articles)
         df = df.sort_values(by="SortName", key=lambda col: col.str.lower())
-
-        search_query = st.text_input(
-            label="",
-            placeholder="🔍 Search Areas",
-            label_visibility="collapsed"
-        ).strip().lower()
 
         with st.expander("🔍 Filter Areas"):
             col1, col2, col3 = st.columns(3)
@@ -85,8 +86,8 @@ def show_directions_page():
         if filter_continent != "All":
             df = df[df["Continent"] == filter_continent]
 
-        if search_query:
-            df = df[df["Area"].str.lower().str.contains(search_query)]
+        if search_term:
+            df = df[df["Area"].str.lower().str.contains(search_term)]
 
         # 🎯 Apply level filter
         if filter_level.isdigit():

@@ -41,19 +41,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 📍 Sidebar nav
+# 📍 Sidebar nav (updated order)
 with st.sidebar:
     st.title("DSL Buddy")
     page = st.radio("Choose a tab:", [
         "🏰 Welcome",
+        "🧭 Directions", 
         "⚔️ Weapons",
-        "🧭 Directions",
         "💫 Spell & Skill Effects", 
         "🌀 Gateposts",
         "✨ Summons",
         "📖 Bestiary",
-        "🧬 Race/Class Comparison",
-        "🌕 Moon Tracker"
+        "🌕 Moon Tracker",
+        "🧬 Race/Class Comparison"
     ], key="page")
 
 # 🧙 Welcome screen
@@ -67,14 +67,14 @@ def show_welcome_page():
     """, unsafe_allow_html=True)
 
     nav_links = [
-        ("⚔️ Weapons!", "⚔️ Weapons"),
         ("🧭 Directions!", "🧭 Directions"),
+        ("⚔️ Weapons!", "⚔️ Weapons"),
         ("💫 Spell & Skill Effects!", "💫 Spell & Skill Effects"),
         ("🌀 Gateposts!", "🌀 Gateposts"),
         ("✨ Summons!", "✨ Summons"),
         ("📖 Bestiary!", "📖 Bestiary"),
-        ("🧬 Race/Class Comparison!", "🧬 Race/Class Comparison"),
         ("🌕 Moon Tracker FOR MAXIMUM GAINS!", "🌕 Moon Tracker"),
+        ("🧬 Race/Class Comparison!", "🧬 Race/Class Comparison"),
     ]
 
     for text, tab in nav_links:
@@ -89,13 +89,13 @@ def show_welcome_page():
         </div>
     """, unsafe_allow_html=True)
 
-# 🧭 Page router
+# 🧭 Page router (updated to match new order)
 if page == "🏰 Welcome":
     show_welcome_page()
-elif page == "⚔️ Weapons":
-    show_weapons_page()
 elif page == "🧭 Directions":
     show_directions_page()
+elif page == "⚔️ Weapons":
+    show_weapons_page()
 elif page == "💫 Spell & Skill Effects":
     show_effects_page()
 elif page == "🌀 Gateposts":
@@ -104,7 +104,7 @@ elif page == "✨ Summons":
     show_summons_page()
 elif page == "📖 Bestiary":
     show_bestiary_page()
-elif page == "🧬 Race/Class Comparison":
-    show_comparison_page()
 elif page == "🌕 Moon Tracker":
     show_moon_page()
+elif page == "🧬 Race/Class Comparison":
+    show_comparison_page()

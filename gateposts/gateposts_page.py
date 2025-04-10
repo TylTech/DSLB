@@ -3,9 +3,26 @@ import pandas as pd
 from shared.supabase_client import supabase
 
 def show_gateposts_page():
+    # ⬅️ Fetch data *before* layout
+    directions_response = supabase.table("directions").select("Continent").execute()
+    direction_data = directions_response.data
+    continents = sorted(set(entry["Continent"] for entry in direction_data if "Continent" in entry and entry["Continent"]))
+
+    continent_options = ["All"] + continents
+
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🌀 Gateposts")
+
+        filter_continent = st.selectbox(
+            label="🌍 Filter by Continent",
+            options=continent_options,
+            index=0,
+            key="filter_continent",
+            format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x,
+            label_visibility="collapsed"
+        )
+
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
@@ -24,23 +41,9 @@ def show_gateposts_page():
         if "id" in df.columns:
             df = df.drop(columns=["id"])
 
-        directions_response = supabase.table("directions").select("Continent").execute()
-        direction_data = directions_response.data
-        continents = sorted(set(entry["Continent"] for entry in direction_data if "Continent" in entry and entry["Continent"]))
-
-        continent_options = ["All"] + continents
-        filter_continent = st.selectbox(
-            label="",
-            options=continent_options,
-            index=0,
-            key="filter_continent",
-            format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x
-        )
-
         filtered_df = df.copy()
         if filter_continent != "All":
             filtered_df = filtered_df[filtered_df["Continent"] == filter_continent]
-
 
         st.subheader(f"🚪 Gateposts in {'All Continents' if filter_continent == 'All' else filter_continent}")
         st.data_editor(
@@ -73,7 +76,7 @@ def show_gateposts_page():
                     st.success(f"{new_gatepost} added!")
                     st.rerun()
 
-        # ✏️ Edit Gatepost (matching other tabs)
+        # ✏️ Edit Gatepost
         if not filtered_df.empty:
             with st.expander("✏️ Edit Existing Gatepost", expanded=False):
                 gatepost_options = filtered_df["Gatepost"].dropna().sort_values().tolist()

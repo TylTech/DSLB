@@ -29,6 +29,12 @@ def show_bestiary_page():
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🐲 Bestiary")
+        # 🔍 Search bar immediately below header
+        search_query = st.text_input(
+            label="",
+            placeholder="🔎 Search Creatures",
+            label_visibility="collapsed"
+        ).strip().lower()
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
@@ -46,12 +52,6 @@ def show_bestiary_page():
     df["Name_Sort"] = df["Name"].apply(strip_leading_articles)
     df = df.sort_values(by="Name_Sort")
 
-    # 🔍 Search bar
-    search_query = st.text_input(
-        label="",
-        placeholder="🔎 Search Creatures",
-        label_visibility="collapsed"
-    ).strip().lower()
     if search_query:
         df = df[df["Name"].str.lower().str.contains(search_query)]
 

@@ -1,20 +1,8 @@
 import streamlit as st
 import pandas as pd
-import streamlit.components.v1 as components
 from shared.supabase_client import supabase
 
 def show_comparison_page():
-    st.title("🧬 Race/Class Comparison")
-
-    # Home button aligned to top-right
-    col1, col2 = st.columns([8, 1])
-    with col2:
-        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
-        if st.button("🏰 Home"):
-            st.session_state["temp_page"] = "🏰 Welcome"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
     @st.cache_data(ttl=60)
     def load_combos():
         response = supabase.table("raceclass").select("*").execute()
@@ -25,88 +13,86 @@ def show_comparison_page():
         st.warning("No race/class data found.")
         return
 
-    # Prepare Comparison Filters - Dropdown filter with all options inside one dropdown
-    with st.expander("🛠️ Prepare Comparison", expanded=True):
-        filter_col1, filter_col2, filter_col3 = st.columns([1, 1, 1])
+    # 🔽 Option Sets
+    race_opts = sorted(df["Race"].dropna().unique().tolist())
+    class_opts = sorted(df["Class"].dropna().unique().tolist())
+    boost_opts = sorted(df["Boost"].dropna().unique().tolist())
 
-        with filter_col1:
-            race_opts = ["All"] + sorted(df["Race"].dropna().unique().tolist())
-            selected_races = st.selectbox("Race(s)", options=race_opts)
-            if selected_races == "All":
-                selected_races = df["Race"].unique().tolist()
+    race_display = ["All Races"] + race_opts
+    class_display = ["All Classes"] + class_opts
+    boost_display = ["All Boosts"] + boost_opts
 
-        with filter_col2:
-            class_opts = ["All"] + sorted(df["Class"].dropna().unique().tolist())
-            selected_classes = st.selectbox("Class(es)", options=class_opts)
-            if selected_classes == "All":
-                selected_classes = df["Class"].unique().tolist()
+    # 🏰 Header + Filter Row
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.header("🧬 Race/Class Comparison")
 
-        with filter_col3:
-            boost_opts = ["All"] + sorted(df["Boost"].dropna().unique().tolist())
-            selected_boosts = st.selectbox("Boost(s)", options=boost_opts)
-            if selected_boosts == "All":
-                selected_boosts = df["Boost"].unique().tolist()
+        # 🎛️ Filters (tight under header)
+        colf1, colf2, colf3, colf4 = st.columns([3, 3, 3, 3])  # keep uniform column widths
+        with colf1:
+            selected_races = st.multiselect("", race_display, placeholder="Race")
+            if "All Races" in selected_races:
+                selected_races = race_opts
+        with colf2:
+            selected_classes = st.multiselect("", class_display, placeholder="Class")
+            if "All Classes" in selected_classes:
+                selected_classes = class_opts
+        with colf3:
+            selected_boosts = st.multiselect("", boost_display, placeholder="Boost")
+            if "All Boosts" in selected_boosts:
+                selected_boosts = boost_opts
+        with colf4:
+            gender = st.selectbox("", options=["Male", "Female"])  # ← shows full label now
 
-        gender = st.radio("Gender", ["Male", "Female"], horizontal=True)
 
-        # Clear Filters Button
-        clear_button = st.button("Clear Filters")
-        if clear_button:
-            selected_races = ["All"]
-            selected_classes = ["All"]
-            selected_boosts = ["All"]
-            gender = "Male"
-            st.experimental_rerun()  # To reset the page and filters
 
-    # Generate Comparison Button
-    generate = st.button("🚀 Generate Comparison")
+    with col2:
+        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # Generate comparison logic
-    if generate:
+    # 🚀 Generate Comparison
+    if st.button("🚀 Generate Comparison", use_container_width=True):
         filtered_df = df.copy()
 
-        # Ensure we handle the filters as lists
-        if isinstance(selected_races, str):
-            selected_races = [selected_races]
-        if isinstance(selected_classes, str):
-            selected_classes = [selected_classes]
-        if isinstance(selected_boosts, str):
-            selected_boosts = [selected_boosts]
-
-        filtered_df = filtered_df[filtered_df["Race"].isin(selected_races)]
-        filtered_df = filtered_df[filtered_df["Class"].isin(selected_classes)]
-        filtered_df = filtered_df[filtered_df["Boost"].isin(selected_boosts)]
+        if selected_races:
+            filtered_df = filtered_df[filtered_df["Race"].isin(selected_races)]
+        if selected_classes:
+            filtered_df = filtered_df[filtered_df["Class"].isin(selected_classes)]
+        if selected_boosts:
+            filtered_df = filtered_df[filtered_df["Boost"].isin(selected_boosts)]
 
         if gender == "Male":
             filtered_df["STR"] += 2
         else:
             filtered_df["WIS"] += 2
 
-        # Apply minimum stat filters
-        min_str = st.number_input("Min Strength", 0, 100, 0, help="Minimum Strength")
-        min_int = st.number_input("Min Intelligence", 0, 100, 0, help="Minimum Intelligence")
-        min_wis = st.number_input("Min Wisdom", 0, 100, 0, help="Minimum Wisdom")
-        min_dex = st.number_input("Min Dexterity", 0, 100, 0, help="Minimum Dexterity")
-        min_con = st.number_input("Min Constitution", 0, 100, 0, help="Minimum Constitution")
+        def get_stat(key):
+            val = st.session_state.get(key, "0")
+            return int(val) if str(val).isdigit() else 0
 
         filtered_df = filtered_df[
-            (filtered_df["STR"] >= min_str) &
-            (filtered_df["INT"] >= min_int) &
-            (filtered_df["WIS"] >= min_wis) &
-            (filtered_df["DEX"] >= min_dex) &
-            (filtered_df["CON"] >= min_con)
+            (filtered_df["STR"] >= get_stat("min_str")) &
+            (filtered_df["INT"] >= get_stat("min_int")) &
+            (filtered_df["WIS"] >= get_stat("min_wis")) &
+            (filtered_df["DEX"] >= get_stat("min_dex")) &
+            (filtered_df["CON"] >= get_stat("min_con"))
         ]
 
-        # Calculating new columns
-        filtered_df["TOT"] = filtered_df["STR"] + filtered_df["INT"] + filtered_df["WIS"] + filtered_df["DEX"] + filtered_df["CON"]
+        filtered_df["TOT"] = (
+            filtered_df["STR"] + filtered_df["INT"] +
+            filtered_df["WIS"] + filtered_df["DEX"] +
+            filtered_df["CON"]
+        )
         filtered_df["S+D"] = filtered_df["STR"] + filtered_df["DEX"]
         filtered_df["S+D+I"] = filtered_df["STR"] + filtered_df["DEX"] + filtered_df["INT"]
 
-        # Storing in session state for later use
         st.session_state["comparison_df"] = filtered_df
         st.experimental_rerun()
 
-    # Display the resulting comparison table
+    # 🧾 Results
     if "comparison_df" in st.session_state and not st.session_state["comparison_df"].empty:
         st.subheader("🧾 Matching Combinations")
         st.dataframe(
@@ -115,18 +101,24 @@ def show_comparison_page():
             hide_index=True
         )
     else:
-        st.info("No results yet. Use the filters above and click 🚀 Generate Comparison!")
+        st.markdown("""
+        <div style="
+            background-color: #fafafa;
+            padding: 12px 16px;
+            border-radius: 6px;
+            color: #444;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        ">
+            No results yet.
+        </div>
+        """, unsafe_allow_html=True)
 
-    # Minimum stat requirements section in a horizontal row below the table
-    st.markdown("### 📊 Minimum Stat Requirements")
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-    with col1:
-        min_str = st.number_input("Min Strength", 0, 100, 0)
-    with col2:
-        min_int = st.number_input("Min Intelligence", 0, 100, 0)
-    with col3:
-        min_wis = st.number_input("Min Wisdom", 0, 100, 0)
-    with col4:
-        min_dex = st.number_input("Min Dexterity", 0, 100, 0)
-    with col5:
-        min_con = st.number_input("Min Constitution", 0, 100, 0)
+    # 📊 Minimum Stat Requirements
+    with st.expander("📊 Minimum Stat Requirements", expanded=False):
+        col1, col2, col3, col4, col5 = st.columns(5)
+        st.session_state["min_str"] = col1.text_input("Strength", value=st.session_state.get("min_str", "0"))
+        st.session_state["min_int"] = col2.text_input("Intelligence", value=st.session_state.get("min_int", "0"))
+        st.session_state["min_wis"] = col3.text_input("Wisdom", value=st.session_state.get("min_wis", "0"))
+        st.session_state["min_dex"] = col4.text_input("Dexterity", value=st.session_state.get("min_dex", "0"))
+        st.session_state["min_con"] = col5.text_input("Constitution", value=st.session_state.get("min_con", "0"))
