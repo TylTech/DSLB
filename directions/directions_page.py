@@ -27,7 +27,6 @@ def strip_leading_articles(name):
     return re.sub(r"^(a |the )", "", name.strip(), flags=re.IGNORECASE)
 
 def show_directions_page():
-    # Add this just after the function starts
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🧭 Directions")
@@ -37,8 +36,6 @@ def show_directions_page():
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
-
-
 
     try:
         response = supabase.table("directions").select("*").execute()
@@ -53,72 +50,113 @@ def show_directions_page():
         if "Gate Posts" in df.columns:
             df.rename(columns={"Gate Posts": "Gateposts"}, inplace=True)
 
-        # 🔍 Search and Filter
+        df["SortName"] = df["Area"].apply(strip_leading_articles)
+        df = df.sort_values(by="SortName", key=lambda col: col.str.lower())
+
         search_query = st.text_input(
             label="",
             placeholder="🔍 Search Areas",
             label_visibility="collapsed"
         ).strip().lower()
 
-        # Build options list: placeholder first, then actual options
-        continents = sorted(df["Continent"].dropna().unique())
-        options_with_placeholder = ["🌍 Filter by Continent"] + ["All"] + continents
+        with st.expander("🔍 Filter Areas"):
+            col1, col2, col3 = st.columns(3)
 
-        selected_option = st.selectbox(
-            label="",
-            options=options_with_placeholder,
-            index=0,
-        )
+            continents = sorted(df["Continent"].dropna().unique())
+            continent_options = ["All"] + continents
+            filter_continent = col1.selectbox(
+                label="",
+                options=continent_options,
+                index=0,
+                key="filter_continent",
+                format_func=lambda x: "All Continents" if x == "All" else x
+            )
+            filter_level = col2.text_input(label="", placeholder="Level", key="filter_level")
+            filter_align = col3.multiselect(
+                label="",
+                options=["Good", "Neutral", "Evil"],
+                placeholder="Align",
+                key="filter_align"
+            )
 
-        # Filter logic
-        if selected_option == "🌍 Filter by Continent":
-            selected_continent = "All"
-        else:
-            selected_continent = selected_option
+           
 
-        # Apply filter
-        if selected_continent != "All":
-            df = df[df["Continent"] == selected_continent]
-
+        # 🌍 Apply continent filter
+        if filter_continent != "All":
+            df = df[df["Continent"] == filter_continent]
 
         if search_query:
             df = df[df["Area"].str.lower().str.contains(search_query)]
 
-        df["SortName"] = df["Area"].apply(strip_leading_articles)
-        df = df.sort_values(by="SortName", key=lambda col: col.str.lower())
+        # 🎯 Apply level filter
+        if filter_level.isdigit():
+            level_target = int(filter_level)
 
-        st.subheader(f"🗺️ Areas ({'All Continents' if selected_continent == 'All' else selected_continent})")
+            def matches_level_range(level_text):
+                match = re.search(r"(\d+)\s*[-–—]\s*(\d+)", str(level_text))
+                if match:
+                    low, high = int(match.group(1)), int(match.group(2))
+                    return low <= level_target <= high
+                return False
+
+            df = df[df["Levels"].apply(matches_level_range)]
+
+        # 😇😈 Align filter
+        if filter_align:
+            df = df[df["Align"].apply(lambda align: align.lower() == "all" or align in filter_align)]
+
+
+
+
+        st.subheader(f"🌍 Areas ({'All Continents' if filter_continent == 'All' else filter_continent})")
 
         scroll_html = """
         <div style='max-height: 700px; overflow-y: auto; padding-right: 10px; font-family: sans-serif; font-size: 14px;'>
         """
 
         for _, row in df.iterrows():
-            clean = row["Directions"]
-            zmud = format_directions_semicolon(clean)
-            mudrammer = zmud  # Same format
+            starting_point = row["Starting Point"]
+            clean_directions = row["Directions"]
+            clean = f"From {starting_point}: {clean_directions}"
+            zmud = format_directions_semicolon(clean_directions)
+            mudrammer = zmud
+
+
 
             scroll_html += f"""
-            <div style='padding: 6px 0 6px 6px; border-bottom: 1px solid #ccc;'>
-                <div style='padding-left: 4px; font-weight: bold;'>{row['Area']}</div>
-                <div style='padding-left: 6px;'>
-                    From {row['Starting Point']}: <code>{row['Directions']}</code><br>
-                    Gateposts: {row['Gateposts']}<br>
-                    Levels: {row['Levels']} &nbsp;&nbsp;&nbsp; Align: {row['Align']} &nbsp;&nbsp;&nbsp; Continent: {row['Continent']}<br>
-                    <div style="margin: 1px 0;">
-                        <button onclick="navigator.clipboard.writeText(`{clean}`)">🧽 Clean</button>
-                        <button onclick="navigator.clipboard.writeText(`{zmud}`)">⚡ zMUD</button>
-                        <button onclick="navigator.clipboard.writeText(`{mudrammer}`)">📱 Mudrammer</button>
+            <div style='padding: 6px 0 6px 6px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center;'>
+                <div>
+                    <div style="margin-bottom: 4px;">
+                        <span style="font-weight: bold;">{row['Area']}</span>
+                        <span style="padding-left: 10px;">({row['Levels']}; {row['Align']})</span>
+                        <span style="padding-left: 10px;">
+                            <button style="padding: 1px 5px; font-size: 0.9em;" onclick="navigator.clipboard.writeText(`{clean}`)">📋</button>
+                            <button style="padding: 1px 5px; font-size: 0.9em;" onclick="navigator.clipboard.writeText(`{zmud}`)">⚡</button>
+                            <button style="padding: 1px 5px; font-size: 0.9em;" onclick="navigator.clipboard.writeText(`{mudrammer}`)">📱</button>
+                        </span>
                     </div>
+
+
+
+
+
+                    <div style='padding-left: 2px;'>
+                        From {row['Starting Point']}: <code>{row['Directions']}</code><br>
+                        Gateposts: {row['Gateposts']}<br>
+
+                    </div>
+
+
                 </div>
+
             </div>
             """
+
 
         scroll_html += "</div>"
         components.html(scroll_html, height=700, scrolling=False)
 
-        # --- Add New Area ---
-
+        # ➕ Add New Area
         with st.expander("➕ Add New Area"):
             with st.form("add_area_form"):
                 col1, col2 = st.columns(2)
@@ -128,7 +166,7 @@ def show_directions_page():
                 new_gateposts = st.text_input("Gateposts")
                 new_levels = st.text_input("Levels")
                 new_align = st.text_input("Align")
-                new_continent = st.selectbox("Continent", continents[1:])
+                new_continent = st.selectbox("Continent", continents)
 
                 if st.form_submit_button("➕ Add Area"):
                     new_entry = {
@@ -148,9 +186,7 @@ def show_directions_page():
                         st.error("Failed to add new area.")
                         st.exception(e)
 
-        # --- Edit Existing Area ---
-
-
+        # ✏️ Edit Existing Area
         with st.expander("✏️ Edit Existing Area", expanded=False):
             area_list = df["Area"].dropna().sort_values(key=lambda col: col.str.lower()).tolist()
             selected_area = st.selectbox("Choose Area", area_list)
@@ -165,14 +201,7 @@ def show_directions_page():
                     gateposts = st.text_input("Gateposts", selected_row["Gateposts"])
                     levels = st.text_input("Levels", selected_row["Levels"])
                     align = st.text_input("Align", selected_row["Align"])
-                    continent_options = continents[1:]  # Remove placeholder
-                    selected_continent_value = selected_row["Continent"]
-
-                    # Default to first option if current value is missing
-                    default_index = continent_options.index(selected_continent_value) if selected_continent_value in continent_options else 0
-
-                    continent = st.selectbox("Continent", continent_options, index=default_index)
-
+                    continent = st.selectbox("Continent", continents, index=continents.index(selected_row["Continent"]))
 
                     col1, col2 = st.columns(2)
                     with col1:
@@ -201,7 +230,6 @@ def show_directions_page():
                             except Exception as e:
                                 st.error("Failed to delete area.")
                                 st.exception(e)
-
 
     except Exception as e:
         st.error("Failed to load directions data from Supabase.")

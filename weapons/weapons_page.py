@@ -5,6 +5,11 @@ import re
 from shared.utils import strip_leading_articles
 from shared.utils import strip_leading_articles_series
 
+def safe_int(text, fallback=0):
+    try:
+        return int(text)
+    except:
+        return fallback
 
 def parse_weapon_identification(lore):
     try:
@@ -201,12 +206,12 @@ def show_weapons_page():
                 weapon_type = col2.selectbox("Type", weapon_type_options, key="manual_weapon_type")
 
                 col3, col4 = st.columns(2)
-                dam = col3.number_input("Damage", min_value=0, step=None)
-                wt = col4.number_input("Weight", min_value=0, step=None)
+                dam = safe_int(col3.text_input("Damage", value="0"))
+                wt = safe_int(col4.text_input("Weight", value="0"))
 
                 col5, col6 = st.columns(2)
                 roll = col5.text_input("Roll")
-                lvl = col6.number_input("Level", min_value=0, step=None)
+                lvl = safe_int(col6.text_input("Level", value="0"))
 
                 key_words = st.text_input("Key Words", value=weapon_name, key="manual_key_words")
                 noun_options = ["Flame", "Freeze", "Magic", "Physical", "Shock"]
@@ -273,10 +278,10 @@ def show_weapons_page():
 
                     key_words = st.text_input("Key Words", value=selected_row["Key Words"])
                     one_h_two_h = st.selectbox("1H/2H", ["1H", "2H"], index=["1H", "2H"].index(selected_row["1H/2H"]))
-                    dam = st.number_input("Damage", value=int(selected_row["Dam"]) if str(selected_row["Dam"]).strip().isdigit() else 0, step=None)
-                    wt = st.number_input("Weight", value=int(selected_row["Wt"]) if str(selected_row["Wt"]).strip().isdigit() else 0, step=None)
+                    dam = safe_int(st.text_input("Damage", value=str(selected_row["Dam"])))
+                    wt = safe_int(st.text_input("Weight", value=str(selected_row["Wt"])))
                     roll = st.text_input("Roll", value=selected_row["Roll"])
-                    lvl = st.number_input("Level", value=int(selected_row["Lvl"]) if str(selected_row["Lvl"]).strip().isdigit() else 0, step=None)
+                    lvl = safe_int(st.text_input("Level", value=str(selected_row["Lvl"])))
 
                     noun_options = ["Flame", "Freeze", "Magic", "Physical", "Shock"]
                     noun = st.selectbox("Noun", noun_options, index=noun_options.index(selected_row["Noun"]) if selected_row["Noun"] in noun_options else 0)
