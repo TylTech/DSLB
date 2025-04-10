@@ -197,22 +197,30 @@ def show_weapons_page():
             with st.form("manual_weapon_form"):
                 col1, col2 = st.columns(2)
                 weapon_name = col1.text_input("Weapon", key="manual_weapon_name")
-                weapon_type = col2.text_input("Type", key="manual_weapon_type")
+                weapon_type_options = ["Axe", "Dagger", "Exotic", "Flail", "Mace", "Polearm", "Staff", "Sword", "Whip"]
+                weapon_type = col2.selectbox("Type", weapon_type_options, key="manual_weapon_type")
 
                 col3, col4 = st.columns(2)
-                dam = col3.number_input("Damage", min_value=0, step=1)
-                wt = col4.number_input("Weight", min_value=0, step=1)
+                dam = col3.number_input("Damage", min_value=0, step=None)
+                wt = col4.number_input("Weight", min_value=0, step=None)
 
                 col5, col6 = st.columns(2)
                 roll = col5.text_input("Roll")
-                lvl = col6.number_input("Level", min_value=0, step=1)
+                lvl = col6.number_input("Level", min_value=0, step=None)
 
                 key_words = st.text_input("Key Words", value=weapon_name, key="manual_key_words")
-                noun = st.text_input("Noun")
-                flag_1 = st.text_input("Flag 1")
-                flag_2 = st.text_input("Flag 2")
+                noun_options = ["Flame", "Freeze", "Magic", "Physical", "Shock"]
+                noun = st.selectbox("Noun", noun_options, key="manual_noun")
+
+                flag_options = ["None", "Flaming", "Freezing", "Frost", "Poison", "Sharp", "Shocking", "Stun", "Vampiric"]
+                flag_1 = st.selectbox("Flag 1", flag_options, key="manual_flag_1", format_func=lambda x: "" if x == "None" else x)
+                flag_2 = st.selectbox("Flag 2", flag_options, key="manual_flag_2", format_func=lambda x: "" if x == "None" else x)
+
                 one_or_two_handed = st.selectbox("1H/2H", ["1H", "2H"])
                 notes = st.text_area("Notes")
+
+                flag_1 = "" if flag_1 == "None" else flag_1
+                flag_2 = "" if flag_2 == "None" else flag_2
 
                 submitted = st.form_submit_button("➕ Add Weapon Manually")
                 if submitted:
@@ -259,17 +267,39 @@ def show_weapons_page():
 
                 with st.form("edit_weapon_form"):
                     weapon_name = st.text_input("Weapon", value=selected_row["Weapon"])
-                    weapon_type = st.text_input("Type", value=selected_row["Type"])
+
+                    weapon_type_options = ["Axe", "Dagger", "Exotic", "Flail", "Mace", "Polearm", "Staff", "Sword", "Whip"]
+                    weapon_type = st.selectbox("Type", weapon_type_options, index=weapon_type_options.index(selected_row["Type"]) if selected_row["Type"] in weapon_type_options else 0)
+
                     key_words = st.text_input("Key Words", value=selected_row["Key Words"])
                     one_h_two_h = st.selectbox("1H/2H", ["1H", "2H"], index=["1H", "2H"].index(selected_row["1H/2H"]))
-                    dam = st.number_input("Damage", value=int(selected_row["Dam"]) if str(selected_row["Dam"]).strip().isdigit() else 0, step=1)
-                    wt = st.number_input("Weight", value=int(selected_row["Wt"]) if str(selected_row["Wt"]).strip().isdigit() else 0, step=1)
+                    dam = st.number_input("Damage", value=int(selected_row["Dam"]) if str(selected_row["Dam"]).strip().isdigit() else 0, step=None)
+                    wt = st.number_input("Weight", value=int(selected_row["Wt"]) if str(selected_row["Wt"]).strip().isdigit() else 0, step=None)
                     roll = st.text_input("Roll", value=selected_row["Roll"])
-                    lvl = st.number_input("Level", value=int(selected_row["Lvl"]) if str(selected_row["Lvl"]).strip().isdigit() else 0, step=1)
-                    noun = st.text_input("Noun", value=selected_row["Noun"])
-                    flag_1 = st.text_input("Flag 1", value=selected_row["Flag 1"])
-                    flag_2 = st.text_input("Flag 2", value=selected_row["Flag 2"])
+                    lvl = st.number_input("Level", value=int(selected_row["Lvl"]) if str(selected_row["Lvl"]).strip().isdigit() else 0, step=None)
+
+                    noun_options = ["Flame", "Freeze", "Magic", "Physical", "Shock"]
+                    noun = st.selectbox("Noun", noun_options, index=noun_options.index(selected_row["Noun"]) if selected_row["Noun"] in noun_options else 0)
+
+                    flag_options = ["None", "Flaming", "Freezing", "Frost", "Poison", "Sharp", "Shocking", "Stun", "Vampiric"]
+                    flag_1 = st.selectbox(
+                        "Flag 1",
+                        flag_options,
+                        index=flag_options.index(selected_row["Flag 1"]) if selected_row["Flag 1"] in flag_options else 0,
+                        format_func=lambda x: "" if x == "None" else x
+                    )
+                    flag_2 = st.selectbox(
+                        "Flag 2",
+                        flag_options,
+                        index=flag_options.index(selected_row["Flag 2"]) if selected_row["Flag 2"] in flag_options else 0,
+                        format_func=lambda x: "" if x == "None" else x
+                    )
+
+
                     notes = st.text_input("Notes", value=selected_row["Notes"])
+
+                    flag_1 = "" if flag_1 == "None" else flag_1
+                    flag_2 = "" if flag_2 == "None" else flag_2
 
                     col1, col2 = st.columns(2)
                     with col1:
