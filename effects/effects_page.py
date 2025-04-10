@@ -35,7 +35,7 @@ def show_effects_page():
         df["Notes"] = df["Notes"].str.replace(r"\\n|/n", "\n", regex=True)
 
         # 🔀 Filter toggle: Spell / Skill / Both
-        with st.expander("🔍 Filter by Type", expanded=False):
+        with st.expander("🔍 Filter Effects", expanded=False):
             type_filter = st.radio("Effect type:", ["Spell", "Skill", "Both"], horizontal=True, label_visibility="collapsed")
 
         if type_filter != "Both":

@@ -13,11 +13,9 @@ def show_gateposts_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-
     try:
         response = supabase.table("gateposts").select("*").execute()
         data = response.data
-
         if not data:
             st.warning("No gatepost data found.")
             return
@@ -26,11 +24,25 @@ def show_gateposts_page():
         if "id" in df.columns:
             df = df.drop(columns=["id"])
 
-        continents = sorted(df["Continent"].dropna().unique())
-        selected_continent = st.selectbox("🌍 Filter by Continent", continents)
-        filtered_df = df[df["Continent"] == selected_continent].copy()
+        directions_response = supabase.table("directions").select("Continent").execute()
+        direction_data = directions_response.data
+        continents = sorted(set(entry["Continent"] for entry in direction_data if "Continent" in entry and entry["Continent"]))
 
-        st.subheader(f"🚪 Gateposts in {selected_continent}")
+        continent_options = ["All"] + continents
+        filter_continent = st.selectbox(
+            label="",
+            options=continent_options,
+            index=0,
+            key="filter_continent",
+            format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x
+        )
+
+        filtered_df = df.copy()
+        if filter_continent != "All":
+            filtered_df = filtered_df[filtered_df["Continent"] == filter_continent]
+
+
+        st.subheader(f"🚪 Gateposts in {'All Continents' if filter_continent == 'All' else filter_continent}")
         st.data_editor(
             filtered_df[["Gatepost", "Zone", "Levels", "Key Words"]],
             use_container_width=True,
@@ -39,14 +51,16 @@ def show_gateposts_page():
             key="gatepost_editor"
         )
 
+        # ➕ Add New Gatepost
         with st.expander("➕ Add New Gatepost"):
             with st.form("add_gatepost_form"):
                 col1, col2 = st.columns(2)
                 new_gatepost = col1.text_input("Gatepost")
                 new_zone = col2.text_input("Zone")
-                new_levels = st.text_input("Levels")
-                new_keywords = st.text_input("Key Words")
-                new_continent = st.text_input("Continent")
+                col3, col4 = st.columns(2)
+                new_levels = col3.text_input("Levels")
+                new_keywords = col4.text_input("Key Words")
+                new_continent = st.selectbox("Continent", continents)
 
                 if st.form_submit_button("➕ Add Gatepost"):
                     supabase.table("gateposts").insert({
@@ -58,36 +72,41 @@ def show_gateposts_page():
                     }).execute()
                     st.success(f"{new_gatepost} added!")
                     st.rerun()
-        
-        st.subheader("✏️ Edit Existing Gatepost")
-        editable_names = filtered_df["Gatepost"].dropna().sort_values().tolist()
-        selected_gatepost = st.selectbox("Select gatepost to edit", editable_names)
 
-        if selected_gatepost:
-            row = df[df["Gatepost"] == selected_gatepost].iloc[0]
-            with st.expander("Edit This Gatepost"):
-                with st.form("edit_gatepost_form"):
-                    col1, col2 = st.columns(2)
-                    zone = col1.text_input("Zone", row["Zone"])
-                    levels = col2.text_input("Levels", row["Levels"])
-                    keywords = st.text_input("Key Words", row["Key Words"])
+        # ✏️ Edit Gatepost (matching other tabs)
+        if not filtered_df.empty:
+            with st.expander("✏️ Edit Existing Gatepost", expanded=False):
+                gatepost_options = filtered_df["Gatepost"].dropna().sort_values().tolist()
+                selected_gatepost = st.selectbox("Choose Gatepost", gatepost_options)
 
-                    if st.form_submit_button("💾 Save Changes"):
-                        supabase.table("gateposts").update({
-                            "Zone": zone,
-                            "Levels": levels,
-                            "Key Words": keywords
-                        }).eq("Gatepost", selected_gatepost).execute()
-                        st.success(f"{selected_gatepost} updated successfully!")
-                        st.rerun()
+                if selected_gatepost:
+                    selected_row = df[df["Gatepost"] == selected_gatepost].iloc[0]
 
-            with st.expander("🗑️ Delete This Gatepost"):
-                if st.button("Delete Gatepost"):
-                    supabase.table("gateposts").delete().eq("Gatepost", selected_gatepost).execute()
-                    st.success(f"{selected_gatepost} deleted.")
-                    st.rerun()
+                    with st.form("edit_gatepost_form"):
+                        col1, col2 = st.columns(2)
+                        zone = col1.text_input("Zone", selected_row["Zone"])
+                        levels = col2.text_input("Levels", selected_row["Levels"])
+                        key_words = st.text_input("Key Words", selected_row["Key Words"])
+                        continent = st.selectbox("Continent", continents, index=continents.index(selected_row["Continent"]))
 
-        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("💾 Save Changes"):
+                                supabase.table("gateposts").update({
+                                    "Zone": zone,
+                                    "Levels": levels,
+                                    "Key Words": key_words,
+                                    "Continent": continent
+                                }).eq("Gatepost", selected_gatepost).execute()
+                                st.success(f"{selected_gatepost} updated successfully!")
+                                st.rerun()
+                        with col2:
+                            if st.form_submit_button("🗑️ Delete Gatepost"):
+                                supabase.table("gateposts").delete().eq("Gatepost", selected_gatepost).execute()
+                                st.success(f"{selected_gatepost} deleted.")
+                                st.rerun()
+        else:
+            st.info("No gateposts available to edit.")
 
     except Exception as e:
         st.error("Failed to load gateposts data from Supabase.")

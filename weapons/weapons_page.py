@@ -186,8 +186,8 @@ def show_weapons_page():
 
         with st.expander("➕ Add New Weapon", expanded=False):
             st.markdown("#### 📋 Paste Weapon Identification")
-            pasted_text = st.text_area("Paste the weapon identification text here")
-            if st.button("Add Weapon from Pasted Text"):
+            pasted_text = st.text_area(label="", placeholder="Paste weapon text here ...", label_visibility="collapsed")
+            if st.button("➕ Add Weapon"):
                 weapon_data = parse_weapon_identification(pasted_text)
                 if weapon_data:
                     try:
@@ -227,7 +227,7 @@ def show_weapons_page():
                 flag_1 = "" if flag_1 == "None" else flag_1
                 flag_2 = "" if flag_2 == "None" else flag_2
 
-                submitted = st.form_submit_button("➕ Add Weapon Manually")
+                submitted = st.form_submit_button("➕ Add Weapon")
                 if submitted:
                     manual_data = {
                         "Weapon": weapon_name,

@@ -1,11 +1,34 @@
 import streamlit as st
 import pandas as pd
 from shared.supabase_client import supabase
+import re
+
+def strip_leading_articles(name):
+    return re.sub(r'^(a|an|the)\s+', '', name.strip(), flags=re.IGNORECASE).lower()
+
+def parse_creature_lore(lore):
+    lines = lore.strip().split('\n')
+    name = lines[0].split('Race:')[0].replace('Creature:', '').strip()
+    health = None
+    level = None
+    for line in lines:
+        if line.startswith('The base health of this creature is'):
+            health = line.split('is')[-1].strip().replace('.', '')
+        if 'This creature is upon the cycle of training' in line:
+            match = re.search(r"'([^']+)'", line)
+            if match:
+                level = match.group(1)
+    return {
+        'Name': name,
+        'Health': health or "",
+        'Level': level or "",
+        'Lore': lore
+    }
 
 def show_bestiary_page():
     col1, col2 = st.columns([8, 1])
     with col1:
-        st.markdown("## 🐲 Bestiary")
+        st.header("🐲 Bestiary")
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
@@ -18,94 +41,134 @@ def show_bestiary_page():
         response = supabase.table("bestiary").select("*").execute()
         return pd.DataFrame(response.data)
 
-    df = load_bestiary()
+    df_raw = load_bestiary()
+    df = df_raw.copy()
+    df["Name_Sort"] = df["Name"].apply(strip_leading_articles)
+    df = df.sort_values(by="Name_Sort")
 
+    # 🔍 Search bar
+    search_query = st.text_input(
+        label="",
+        placeholder="🔎 Search Creatures",
+        label_visibility="collapsed"
+    ).strip().lower()
+    if search_query:
+        df = df[df["Name"].str.lower().str.contains(search_query)]
+
+    # 📖 Table
     if not df.empty:
-        df_display = df.copy()
-        df_display["Lore"] = df_display["Lore"]
-
-        st.subheader("📖 Bestiary Table")
+        st.subheader("📖 Compendium of Creatures")
         st.data_editor(
-            df_display[["Name", "Level", "Zone", "Health", "Key Words", "Notes", "Lore"]],
+            df[["Name", "Level", "Zone", "Health", "Key Words", "Notes", "Lore"]],
             use_container_width=True,
             hide_index=True,
             disabled=True,
-            key="bestiary_editor",
             column_config={
-                "Lore": st.column_config.TextColumn(
-                    "Lore",
-                    help="Full creature lore",
-                    width="small"
-                )
-            }
+                "Lore": st.column_config.TextColumn("Lore", help="Full creature lore", width="small"),
+                "Name": st.column_config.TextColumn("Name", disabled=True),
+            },
+            key="bestiary_editor"
         )
     else:
         st.info("No creatures found in the bestiary.")
 
-    st.divider()
-    st.subheader("➕ Add New Creature")
-
-    with st.expander("Add New Creature", expanded=False):
+    # ➕ Add Creature
+    with st.expander("➕ Add New Creature", expanded=False):
         st.markdown("#### 📋 Paste Creaturelore")
-        paste_input = st.text_area("Paste Creaturelore", height=150)
+        paste_input = st.text_area(label="", placeholder="📋 Paste creaturelore text here...", height=150, label_visibility="collapsed")
 
-        st.markdown("#### 🛠️ Manually Enter Creature Information")
-        new_name = st.text_input("Name")
-        new_level = st.text_input("Level")
-        new_zone = st.text_input("Zone")
-        new_health = st.text_input("Health")
-        new_keywords = st.text_input("Key Words")
-        new_notes = st.text_input("Notes")
+        if paste_input.strip():
+            try:
+                parsed_lore = parse_creature_lore(paste_input.strip())
+                st.info(f"Parsed: {parsed_lore['Name']} (Level {parsed_lore['Level']}, {parsed_lore['Health']} HP)")
+            except Exception:
+                st.warning("Unable to parse creaturelore.")
 
-        if st.button("Add Creature"):
-            if new_name and new_level and new_zone and new_health:
-                supabase.table("bestiary").insert({
-                    "Name": new_name,
-                    "Level": new_level,
-                    "Zone": new_zone,
-                    "Health": new_health,
-                    "Key Words": new_keywords,
-                    "Notes": new_notes,
-                    "Lore": paste_input or "Lore coming soon..."
-                }).execute()
-                st.success(f"Creature '{new_name}' added!")
-                st.experimental_rerun()
+        if st.button("➕ Add Creature", key="paste_add_btn"):
+            if paste_input.strip():
+                try:
+                    result = parse_creature_lore(paste_input.strip())
+                    result.update({
+                        "Zone": "",
+                        "Key Words": "",
+                        "Notes": ""
+                    })
+                    supabase.table("bestiary").insert(result).execute()
+                    st.success(f"Creature '{result['Name']}' added from lore!")
+                    st.rerun()
+                except Exception as e:
+                    st.error("Failed to parse and add creature.")
+                    st.exception(e)
             else:
-                st.warning("Please fill in all required fields.")
+                st.warning("Please paste some lore first.")
 
-
-    st.divider()
-    st.subheader("✏️ Edit Creature")
-
-    with st.expander("Edit Existing Creature", expanded=False):
-        if not df.empty:
-            creature_to_edit = st.selectbox("Choose Creature", options=df["Name"].tolist())
-            selected_row = df[df["Name"] == creature_to_edit].iloc[0]
-
-            edit_name = st.text_input("Name", value=selected_row["Name"])
-            edit_level = st.text_input("Level", value=selected_row["Level"])
-            edit_zone = st.text_input("Zone", value=selected_row["Zone"])
-            edit_health = st.text_input("Health", value=selected_row["Health"])
-            edit_keywords = st.text_input("Key Words", value=selected_row.get("Key Words", ""))
-            edit_notes = st.text_input("Notes", value=selected_row.get("Notes", ""))
-
+        # 🛠️ Manual Entry
+        st.markdown("#### 🛠️ Manually Enter Creature Information")
+        with st.form("add_creature_form"):
             col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Save Changes"):
-                    supabase.table("bestiary").update({
-                        "Name": edit_name,
-                        "Level": edit_level,
-                        "Zone": edit_zone,
-                        "Health": edit_health,
-                        "Key Words": edit_keywords,
-                        "Notes": edit_notes
-                    }).eq("id", selected_row["id"]).execute()
-                    st.success(f"Creature '{edit_name}' updated!")
-                    st.experimental_rerun()
-            with col2:
-                if st.button("Delete Creature"):
-                    supabase.table("bestiary").delete().eq("id", selected_row["id"]).execute()
-                    st.success(f"Creature '{selected_row['Name']}' deleted!")
-                    st.experimental_rerun()
-        else:
-            st.info("No creatures available to edit.")
+            new_name = col1.text_input("Name")
+            new_level = col2.text_input("Level")
+
+            col3, col4 = st.columns(2)
+            new_zone = col3.text_input("Zone")
+            new_health = col4.text_input("Health")
+
+            new_keywords = st.text_input("Key Words")
+            new_notes = st.text_input("Notes")
+
+            submitted = st.form_submit_button("➕ Add Creature")
+            if submitted:
+                if new_name and new_level and new_zone and new_health:
+                    supabase.table("bestiary").insert({
+                        "Name": new_name,
+                        "Level": new_level,
+                        "Zone": new_zone,
+                        "Health": new_health,
+                        "Key Words": new_keywords,
+                        "Notes": new_notes,
+                        "Lore": "Lore coming soon..."
+                    }).execute()
+                    st.success(f"Creature '{new_name}' added!")
+                    st.rerun()
+                else:
+                    st.warning("Please fill in all required fields.")
+
+    # ✏️ Edit Existing Creature
+    if not df_raw.empty:
+        with st.expander("✏️ Edit Existing Creature", expanded=False):
+            creature_to_edit = st.selectbox("Choose Creature", options=df_raw["Name"].tolist())
+            selected_row = df_raw[df_raw["Name"] == creature_to_edit].iloc[0]
+
+            with st.form("edit_creature_form"):
+                edit_name = st.text_input("Name", value=selected_row["Name"])
+                col1, col2 = st.columns(2)
+                edit_level = col1.text_input("Level", value=selected_row["Level"])
+                edit_zone = col2.text_input("Zone", value=selected_row["Zone"])
+
+                col3, col4 = st.columns(2)
+                edit_health = col3.text_input("Health", value=selected_row["Health"])
+                edit_keywords = col4.text_input("Key Words", value=selected_row.get("Key Words", ""))
+
+                edit_notes = st.text_input("Notes", value=selected_row.get("Notes", ""))
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("💾 Save Changes"):
+                        supabase.table("bestiary").update({
+                            "Name": edit_name,
+                            "Level": edit_level,
+                            "Zone": edit_zone,
+                            "Health": edit_health,
+                            "Key Words": edit_keywords,
+                            "Notes": edit_notes
+                        }).eq("id", selected_row["id"]).execute()
+                        st.success(f"Creature '{edit_name}' updated!")
+                        st.rerun()
+
+                with col2:
+                    if st.form_submit_button("🗑️ Delete Creature"):
+                        supabase.table("bestiary").delete().eq("id", selected_row["id"]).execute()
+                        st.success(f"Creature '{selected_row['Name']}' deleted!")
+                        st.rerun()
+    else:
+        st.info("No creatures available to edit.")

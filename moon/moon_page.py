@@ -1,9 +1,24 @@
 import streamlit as st
 import datetime
 import re
+import pytz
+
+# Eastern Time Zone
+eastern = pytz.timezone('US/Eastern')
 
 def show_moon_page():
-    st.title("🌕 Moon Tracker")
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        st.header("🌕 Moon Tracker")
+    with col2:
+        st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
+        if st.button("🏰 Home"):
+            st.session_state["temp_page"] = "🏰 Welcome"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Add your moon tracker code here...
+
 
     result_container = st.container()  # Placeholder for results display
 
@@ -32,23 +47,23 @@ def show_moon_page():
 
     # Pasted input
     with st.expander("📋 Paste Moon Data From Client", expanded=False):
-        st.write("""
-            Paste **only the relevant lines** from your client for one moon.
-
-            Example:
-            ```
-            The red moon is crescent waxing and not visible.
-            [Mana +10%] [Saves -2] [Casting +2] [Regen 0%] [Cycles remaining 19 (9 1/2 Hours)]
-            ```
-        """)
-        user_input = st.text_area("Moon Data:", height=150)
-
+        user_input = st.text_area("Moon Data:", height=100)
         if st.button("🔮 Calculate Phase "):
             moon_color, current_phase, cycles_remaining = parse_single_moon_data(user_input)
             if not (moon_color and current_phase and cycles_remaining is not None):
                 st.warning("Unable to parse all required information (moon color, phase, cycles remaining). Please check your pasted data.")
                 return
             triggered = True
+        st.write("""
+            Paste the relevant lines from your client. For example:
+            ```
+            The red moon is crescent waxing and not visible.
+            [Mana +10%] [Saves -2] [Casting +2] [Regen 0%] [Cycles remaining 69 (34 1/2 Hours)]
+            ```
+        """)
+        
+
+        
 
     # Show results at the top of the page if triggered
     if triggered and moon_color and current_phase and cycles_remaining is not None:
@@ -96,23 +111,39 @@ def parse_single_moon_data(user_input: str):
         cleaned_lines.append(line.strip())
 
     for line in cleaned_lines:
+        # Check if a moon color is mentioned in the line
         if "red moon" in line:
-            moon_color = "red"
+            red_line = line  # Store line if red moon is present
         elif "white moon" in line:
-            moon_color = "white"
+            white_line = line  # Store line if white moon is present
         elif "black moon" in line:
-            moon_color = "black"
+            black_line = line  # Store line if black moon is present
 
+        # Check for moon phases in the line
         for phase in moon_phases:
             if phase in line:
                 current_phase = phase
                 break
 
+        # Check for the cycles remaining data
         match = re.search(r'cycles remaining\s+(\d+)', line)
         if match:
             cycles_remaining = int(match.group(1))
 
+    # Determine the moon color based on the presence of the cycle data (the line with numbers)
+    if cycles_remaining is not None:
+        if "red moon" in red_line:
+            moon_color = "red"
+        elif "white moon" in white_line:
+            moon_color = "white"
+        elif "black moon" in black_line:
+            moon_color = "black"
+        else:
+            moon_color = None  # No valid moon color found
+
     return moon_color, current_phase, cycles_remaining
+
+
 
 
 def compute_upcoming_phases(moon_color: str, current_phase: str,
@@ -134,20 +165,21 @@ def compute_upcoming_phases(moon_color: str, current_phase: str,
         return []
 
     phase_index = moon_phases.index(current_phase)
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(eastern)
     results = []
 
-    for _ in range(8):
+    for _ in range(24):  # Show 3 full cycles (24 phases)
         phase_index = (phase_index + 1) % len(moon_phases)
         upcoming_phase = moon_phases[phase_index]
 
         seconds_until_phase = cycles_remaining * SECONDS_PER_TICK
         phase_start_time = now + datetime.timedelta(seconds=seconds_until_phase)
+        phase_start_time = phase_start_time.astimezone(eastern)
 
         results.append({
             "Moon": moon_color.capitalize(),
             "Upcoming Phase": upcoming_phase,
-            "Phase Begins": phase_start_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "Phase Begins": phase_start_time.strftime("%I:%M %p, %m/%d"),
             "Time Until": format_duration(seconds_until_phase)
         })
 
