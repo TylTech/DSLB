@@ -3,38 +3,39 @@ import pandas as pd
 from shared.supabase_client import supabase
 
 def show_summons_page():
+    # ✨ Header + Home
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("✨ Summons")
-
-        # 🌍 Filter by Continent — match Gateposts spacing
-        response = supabase.table("summons").select("*").execute()
-        data = response.data
-        if not data:
-            st.warning("No summons data found.")
-            return
-
-        df = pd.DataFrame(data)
-        if "id" in df.columns:
-            df = df.drop(columns=["id"])
-
-        continents = sorted(df["Continent"].dropna().unique())
-        continent_options = ["All"] + continents
-        selected_continent = st.selectbox(
-            label="🌍 Filter by Continent",
-            options=continent_options,
-            index=0,
-            format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x,
-            key="summon_filter_continent",
-            label_visibility="collapsed"
-        )
-
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # 🌍 Load data + continent filter
+    response = supabase.table("summons").select("*").execute()
+    data = response.data
+    if not data:
+        st.warning("No summons data found.")
+        return
+
+    df = pd.DataFrame(data)
+    if "id" in df.columns:
+        df = df.drop(columns=["id"])
+
+    continents = sorted(df["Continent"].dropna().unique())
+    continent_options = ["All"] + continents
+    selected_continent = st.selectbox(
+        label="🌍 Filter by Continent",
+        options=continent_options,
+        index=0,
+        format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x,
+        key="summon_filter_continent",
+        label_visibility="collapsed"
+    )
+
 
     filtered_df = df if selected_continent == "All" else df[df["Continent"] == selected_continent]
 

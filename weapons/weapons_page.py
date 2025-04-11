@@ -77,14 +77,10 @@ def parse_weapon_identification(lore):
 
 
 def show_weapons_page():
+    # 💥 Header and Home split for layout sanity
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("⚔️ Weapons")
-        search_text = st.text_input(
-            label="",
-            placeholder="🔎 Search Weapons",
-            label_visibility="collapsed"
-        ).strip().lower()
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
@@ -92,6 +88,12 @@ def show_weapons_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # 🔍 Search box separated below
+    search_text = st.text_input(
+        label="",
+        placeholder="🔎 Search Weapons",
+        label_visibility="collapsed"
+    ).strip().lower()
 
     # Sync selected weapon if override exists
     if "selected_weapon_override" in st.session_state:

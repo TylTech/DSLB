@@ -22,36 +22,35 @@ def show_comparison_page():
     class_display = ["All Classes"] + class_opts
     boost_display = ["All Boosts"] + boost_opts
 
-    # 🏰 Header + Filter Row
+
+    # 🧬 Header + 🏰 Home
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🧬 Race/Class Comparison")
-
-        # 🎛️ Filters (tight under header)
-        colf1, colf2, colf3, colf4 = st.columns([3, 3, 3, 3])  # keep uniform column widths
-        with colf1:
-            selected_races = st.multiselect("", race_display, placeholder="Race")
-            if "All Races" in selected_races:
-                selected_races = race_opts
-        with colf2:
-            selected_classes = st.multiselect("", class_display, placeholder="Class")
-            if "All Classes" in selected_classes:
-                selected_classes = class_opts
-        with colf3:
-            selected_boosts = st.multiselect("", boost_display, placeholder="Boost")
-            if "All Boosts" in selected_boosts:
-                selected_boosts = boost_opts
-        with colf4:
-            gender = st.selectbox("", options=["Male", "Female"])  # ← shows full label now
-
-
-
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # 🎛️ Filters (new row)
+    colf1, colf2, colf3, colf4 = st.columns([3, 3, 3, 3])
+    with colf1:
+        selected_races = st.multiselect("", race_display, placeholder="Race")
+        if "All Races" in selected_races:
+            selected_races = race_opts
+    with colf2:
+        selected_classes = st.multiselect("", class_display, placeholder="Class")
+        if "All Classes" in selected_classes:
+            selected_classes = class_opts
+    with colf3:
+        selected_boosts = st.multiselect("", boost_display, placeholder="Boost")
+        if "All Boosts" in selected_boosts:
+            selected_boosts = boost_opts
+    with colf4:
+        gender = st.selectbox("", options=["Male", "Female"])
+
 
     # 🚀 Generate Comparison
     if st.button("🚀 Generate Comparison", use_container_width=True):

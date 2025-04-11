@@ -26,21 +26,24 @@ def parse_creature_lore(lore):
     }
 
 def show_bestiary_page():
+    # 🐲 Header + 🏰 Home
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🐲 Bestiary")
-        # 🔍 Search bar immediately below header
-        search_query = st.text_input(
-            label="",
-            placeholder="🔎 Search Creatures",
-            label_visibility="collapsed"
-        ).strip().lower()
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # 🔍 Search bar below header for mobile stability
+    search_query = st.text_input(
+        label="",
+        placeholder="🔎 Search Creatures",
+        label_visibility="collapsed"
+    ).strip().lower()
+
 
     @st.cache_data(ttl=60)
     def load_bestiary():

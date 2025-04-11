@@ -10,25 +10,27 @@ def show_gateposts_page():
 
     continent_options = ["All"] + continents
 
+    # 🌀 Header + 🏰 Home
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🌀 Gateposts")
-
-        filter_continent = st.selectbox(
-            label="🌍 Filter by Continent",
-            options=continent_options,
-            index=0,
-            key="filter_continent",
-            format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x,
-            label_visibility="collapsed"
-        )
-
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # 🌍 Filter by Continent dropdown (separate from layout row)
+    filter_continent = st.selectbox(
+        label="🌍 Filter by Continent",
+        options=continent_options,
+        index=0,
+        key="filter_continent",
+        format_func=lambda x: "🌍 Filter by Continent" if x == "All" else x,
+        label_visibility="collapsed"
+    )
+
 
     try:
         response = supabase.table("gateposts").select("*").execute()

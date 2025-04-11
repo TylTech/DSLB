@@ -6,18 +6,20 @@ def show_effects_page():
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("💫 Spell & Skill Effects")
-        # 👇 Search bar in correct position (like Weapons/Directions)
-        search_term = st.text_input(
-            label="",
-            placeholder="🔎 Search Effects",
-            label_visibility="collapsed"
-        ).strip().lower()
     with col2:
         st.markdown("<div style='padding-top: 18px; padding-left: 8px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # 🔍 Search bar comes below for mobile stability
+    search_term = st.text_input(
+        label="",
+        placeholder="🔎 Search Effects",
+        label_visibility="collapsed"
+    ).strip().lower()
+
 
     try:
         response = supabase.table("effects").select("*").execute()
