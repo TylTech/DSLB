@@ -27,22 +27,23 @@ def strip_leading_articles(name):
     return re.sub(r"^(a |the )", "", name.strip(), flags=re.IGNORECASE)
 
 def show_directions_page():
+    # 🔝 Separate header and home button
     col1, col2 = st.columns([8, 1])
     with col1:
         st.header("🧭 Directions")
-        search_term = st.text_input(
-            label="",
-            placeholder="🔎 Search Areas",
-            label_visibility="collapsed"
-        ).strip().lower()
     with col2:
-        # home button block
-
         st.markdown("<div style='padding-top: 18px;'>", unsafe_allow_html=True)
         if st.button("🏰 Home"):
             st.session_state["temp_page"] = "🏰 Welcome"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # 🔍 Now show the search box — in its own block to avoid stacking issues
+    search_term = st.text_input(
+        label="",
+        placeholder="🔎 Search Areas",
+        label_visibility="collapsed"
+    ).strip().lower()
 
     try:
         response = supabase.table("directions").select("*").execute()
