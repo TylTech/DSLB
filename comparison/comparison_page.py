@@ -22,7 +22,6 @@ def show_comparison_page():
     class_display = ["All Classes"] + class_opts
     boost_display = ["All Boosts"] + boost_opts
 
-
     # 🧬 Header + 🏰 Home
     col1, col2 = st.columns([8, 1])
     with col1:
@@ -51,6 +50,14 @@ def show_comparison_page():
     with colf4:
         gender = st.selectbox("", options=["Male", "Female"])
 
+    # 📊 Minimum Stat Requirements (moved up!)
+    with st.expander("📊 Minimum Stat Requirements", expanded=False):
+        col1, col2, col3, col4, col5 = st.columns(5)
+        st.session_state["min_str"] = col1.text_input("Strength", value=st.session_state.get("min_str", "0"))
+        st.session_state["min_int"] = col2.text_input("Intelligence", value=st.session_state.get("min_int", "0"))
+        st.session_state["min_wis"] = col3.text_input("Wisdom", value=st.session_state.get("min_wis", "0"))
+        st.session_state["min_dex"] = col4.text_input("Dexterity", value=st.session_state.get("min_dex", "0"))
+        st.session_state["min_con"] = col5.text_input("Constitution", value=st.session_state.get("min_con", "0"))
 
     # 🚀 Generate Comparison
     if st.button("🚀 Generate Comparison", use_container_width=True):
@@ -89,7 +96,7 @@ def show_comparison_page():
         filtered_df["S+D+I"] = filtered_df["STR"] + filtered_df["DEX"] + filtered_df["INT"]
 
         st.session_state["comparison_df"] = filtered_df
-        st.experimental_rerun()
+        st.rerun()
 
     # 🧾 Results
     if "comparison_df" in st.session_state and not st.session_state["comparison_df"].empty:
@@ -112,12 +119,3 @@ def show_comparison_page():
             No results yet.
         </div>
         """, unsafe_allow_html=True)
-
-    # 📊 Minimum Stat Requirements
-    with st.expander("📊 Minimum Stat Requirements", expanded=False):
-        col1, col2, col3, col4, col5 = st.columns(5)
-        st.session_state["min_str"] = col1.text_input("Strength", value=st.session_state.get("min_str", "0"))
-        st.session_state["min_int"] = col2.text_input("Intelligence", value=st.session_state.get("min_int", "0"))
-        st.session_state["min_wis"] = col3.text_input("Wisdom", value=st.session_state.get("min_wis", "0"))
-        st.session_state["min_dex"] = col4.text_input("Dexterity", value=st.session_state.get("min_dex", "0"))
-        st.session_state["min_con"] = col5.text_input("Constitution", value=st.session_state.get("min_con", "0"))
