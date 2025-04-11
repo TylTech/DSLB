@@ -18,12 +18,35 @@ def show_moon_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # 🧩 Expanders below header for clean mobile layout
+    # 🌒 Show calculated results if available — 🔼 MOVED TO TOP
+    if st.session_state.get("moon_triggered"):
+        moon_color = st.session_state.get("parsed_moon_color") or st.session_state.get("moon_color")
+        current_phase = st.session_state.get("parsed_current_phase") or st.session_state.get("current_phase")
+        cycles_remaining = st.session_state.get("parsed_cycles_remaining") or st.session_state.get("cycles_remaining")
+
+        if moon_color and current_phase and cycles_remaining is not None:
+            current_phase = current_phase.lower()
+            cycles_remaining = int(cycles_remaining)
+            ticks_per_phase = {"white": 108, "red": 86, "black": 66}.get(moon_color, 86)
+            results = compute_upcoming_phases(
+                moon_color=moon_color,
+                current_phase=current_phase,
+                cycles_remaining=cycles_remaining,
+                ticks_per_phase=ticks_per_phase
+            )
+
+            if results:
+                st.subheader(f"Upcoming Phases for the {moon_color.capitalize()} Moon")
+                st.dataframe(results, use_container_width=True)
+            else:
+                st.info("No upcoming phases could be computed. Check your data format.")
+
+    # 🧩 Expanders below results for clean layout
     with st.expander("🌗 Enter Moon Data Manually", expanded=False):
         colf1, colf2, colf3 = st.columns([3, 3, 3])
 
-        # Moon Color Dropdown (capitalized options, placeholder)
-        moon_color = colf1.selectbox(
+        # Moon Color Dropdown
+        colf1.selectbox(
             label="",
             options=["Red", "White", "Black"],
             index=None,
@@ -31,8 +54,8 @@ def show_moon_page():
             key="moon_color"
         )
 
-        # Current Phase Dropdown (capitalized options, placeholder)
-        current_phase = colf2.selectbox(
+        # Current Phase Dropdown
+        colf2.selectbox(
             label="",
             options=[
                 "Full", "Waning 3/4", "Half Waning", "Crescent Waning",
@@ -43,8 +66,8 @@ def show_moon_page():
             key="current_phase"
         )
 
-        # Cycles Remaining text input
-        cycles_remaining = colf3.text_input(
+        # Cycles Remaining Input
+        colf3.text_input(
             label="",
             value="",
             key="cycles_remaining",
@@ -52,15 +75,16 @@ def show_moon_page():
         )
 
         if st.button("🔮 Calculate Phase"):
+            moon_color = st.session_state.get("moon_color")
+            current_phase = st.session_state.get("current_phase")
+            cycles_remaining = st.session_state.get("cycles_remaining", "")
+
             if not moon_color or not current_phase:
                 st.warning("Please select both Color and Phase.")
             else:
                 try:
-                    cycles_remaining_int = int(cycles_remaining) if cycles_remaining else 0
+                    int(cycles_remaining)  # Validates but does not assign to session_state
                     st.session_state["moon_triggered"] = True
-                    st.session_state["moon_color"] = moon_color.lower()
-                    st.session_state["current_phase"] = current_phase.lower()
-                    st.session_state["cycles_remaining"] = cycles_remaining_int
                 except ValueError:
                     st.warning("Please enter a valid number for Cycles Remaining.")
 
@@ -73,9 +97,9 @@ def show_moon_page():
                 st.warning("Unable to parse all required information (moon color, phase, cycles remaining). Please check your pasted data.")
                 return
             st.session_state["moon_triggered"] = True
-            st.session_state["moon_color"] = moon_color
-            st.session_state["current_phase"] = current_phase
-            st.session_state["cycles_remaining"] = cycles_remaining
+            st.session_state["parsed_moon_color"] = moon_color
+            st.session_state["parsed_current_phase"] = current_phase
+            st.session_state["parsed_cycles_remaining"] = cycles_remaining
 
         st.markdown(
             """
@@ -97,22 +121,6 @@ def show_moon_page():
            [Mana +10%] [Saves -2] [Casting +2] [Regen 0%] [Cycles remaining 69 (34 1/2 Hours)]
         </div>
         """, unsafe_allow_html=True)
-
-    # 🌒 Show calculated results if available
-    if st.session_state.get("moon_triggered") and all(k in st.session_state for k in ["moon_color", "current_phase", "cycles_remaining"]):
-        ticks_per_phase = {"white": 108, "red": 86, "black": 66}.get(st.session_state["moon_color"], 86)
-        results = compute_upcoming_phases(
-            moon_color=st.session_state["moon_color"],
-            current_phase=st.session_state["current_phase"],
-            cycles_remaining=int(st.session_state["cycles_remaining"]),
-            ticks_per_phase=ticks_per_phase
-        )
-
-        if results:
-            st.subheader(f"Upcoming Phases for the {st.session_state['moon_color'].capitalize()} Moon")
-            st.dataframe(results, use_container_width=True)
-        else:
-            st.info("No upcoming phases could be computed. Check your data format.")
 
 
 def parse_single_moon_data(user_input: str):
@@ -146,12 +154,14 @@ def parse_single_moon_data(user_input: str):
 
     return moon_color, current_phase, cycles_remaining
 
+
 def compute_upcoming_phases(moon_color, current_phase, cycles_remaining, ticks_per_phase):
     SECONDS_PER_TICK = 42
     moon_phases = ["full", "waning 3/4", "half waning", "crescent waning",
                    "empty", "crescent waxing", "half waxing", "waxing 3/4"]
 
-    if current_phase not in moon_phases: return []
+    if current_phase not in moon_phases:
+        return []
 
     phase_index = moon_phases.index(current_phase)
     now = datetime.datetime.now(eastern)
@@ -175,6 +185,7 @@ def compute_upcoming_phases(moon_color, current_phase, cycles_remaining, ticks_p
         cycles_remaining += ticks_per_phase
 
     return results
+
 
 def format_duration(seconds):
     hours, remainder = divmod(seconds, 3600)
