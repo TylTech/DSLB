@@ -23,8 +23,8 @@ def _get_base64_image():
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-def _get_mobile_base64_image():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_mascot_mobile.png")
+def load_scroll_mascot():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_scroll_mascot.png")
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
@@ -51,7 +51,7 @@ st.markdown("""
     footer {visibility: hidden;}
     .css-164nlkn {display: none;}
 
-    /* 🧙 Background Mascot */
+    /* 🧙 Desktop background mascot */
     .mascot-background {
         position: fixed;
         top: 0;
@@ -67,15 +67,10 @@ st.markdown("""
         pointer-events: none;
     }
 
-    /* 📱 Mobile mascot image – centered, scaled, clean */
+    /* 📱 Mobile hides background */
     @media screen and (max-width: 768px) {
         .mascot-background {
-            background-image: url("data:image/png;base64,%s");
-            background-position: center top;
-            background-size: contain;
-            width: 100vw;
-            height: 100vh;
-            opacity: 1.0;
+            display: none;
         }
     }
 
@@ -88,7 +83,7 @@ st.markdown("""
         overflow: hidden;
     }
     </style>
-""" % (_get_base64_image(), _get_mobile_base64_image()), unsafe_allow_html=True)
+""" % (_get_base64_image()), unsafe_allow_html=True)
 
 # 📍 Sidebar nav
 with st.sidebar:
@@ -108,7 +103,26 @@ with st.sidebar:
 # 🧙 Welcome screen
 def show_welcome_page():
     st.markdown('<div class="mascot-background"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="welcome-foreground">', unsafe_allow_html=True)
+
+    scroll_mascot = load_scroll_mascot()
+    st.markdown("""
+        <div class="welcome-foreground" style="position: relative;">
+    """, unsafe_allow_html=True)
+
+    # Only show scroll mascot on mobile
+    st.markdown(f"""
+        <div class="scroll-mascot-mobile" style="display:none;">
+            <img src="data:image/png;base64,{scroll_mascot}" 
+                 style="width: 200px; max-width: 40vw; margin: 1rem auto; display: block;" />
+        </div>
+        <style>
+            @media screen and (max-width: 768px) {{
+                .scroll-mascot-mobile {{
+                    display: block;
+                }}
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
     st.title("🧙‍♂️ Welcome to DSL Buddy")
 
