@@ -18,11 +18,11 @@ def show_moon_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # 🌒 Show calculated results if available — 🔼 MOVED TO TOP
+    # 🌒 Show calculated results if available
     if st.session_state.get("moon_triggered"):
-        moon_color = st.session_state.get("parsed_moon_color") or st.session_state.get("moon_color")
-        current_phase = st.session_state.get("parsed_current_phase") or st.session_state.get("current_phase")
-        cycles_remaining = st.session_state.get("parsed_cycles_remaining") or st.session_state.get("cycles_remaining")
+        moon_color = st.session_state.get("parsed_moon_color")
+        current_phase = st.session_state.get("parsed_current_phase")
+        cycles_remaining = st.session_state.get("parsed_cycles_remaining")
 
         if moon_color and current_phase and cycles_remaining is not None:
             current_phase = current_phase.lower()
@@ -41,53 +41,41 @@ def show_moon_page():
             else:
                 st.info("No upcoming phases could be computed. Check your data format.")
 
-    # 🧩 Expanders below results for clean layout
+    # 🧩 Manual Entry
     with st.expander("🌗 Enter Moon Data Manually", expanded=False):
         colf1, colf2, colf3 = st.columns([3, 3, 3])
-
-        # Moon Color Dropdown
-        colf1.selectbox(
-            label="",
-            options=["Red", "White", "Black"],
+        moon_color_input = colf1.selectbox(
+            "", ["Red", "White", "Black"],
             index=None,
-            placeholder="🌈 Color",
-            key="moon_color"
+            placeholder="🌈 Color"
         )
-
-        # Current Phase Dropdown
-        colf2.selectbox(
-            label="",
-            options=[
+        current_phase_input = colf2.selectbox(
+            "", [
                 "Full", "Waning 3/4", "Half Waning", "Crescent Waning",
                 "Empty", "Crescent Waxing", "Half Waxing", "Waxing 3/4"
             ],
             index=None,
-            placeholder="🌓 Phase",
-            key="current_phase"
+            placeholder="🌓 Phase"
         )
-
-        # Cycles Remaining Input
-        colf3.text_input(
-            label="",
-            value="",
-            key="cycles_remaining",
-            placeholder="⏳ Cycles Remaining"
+        cycles_remaining_input = colf3.text_input(
+            "", value="", placeholder="⏳ Cycles Remaining"
         )
 
         if st.button("🔮 Calculate Phase"):
-            moon_color = st.session_state.get("moon_color")
-            current_phase = st.session_state.get("current_phase")
-            cycles_remaining = st.session_state.get("cycles_remaining", "")
-
-            if not moon_color or not current_phase:
+            if not moon_color_input or not current_phase_input:
                 st.warning("Please select both Color and Phase.")
             else:
                 try:
-                    int(cycles_remaining)  # Validates but does not assign to session_state
+                    cycles_val = int(cycles_remaining_input)
+                    st.session_state["parsed_moon_color"] = moon_color_input.lower()
+                    st.session_state["parsed_current_phase"] = current_phase_input.lower()
+                    st.session_state["parsed_cycles_remaining"] = cycles_val
                     st.session_state["moon_triggered"] = True
+                    st.rerun()
                 except ValueError:
                     st.warning("Please enter a valid number for Cycles Remaining.")
 
+    # 📋 Pasted Moon Data
     with st.expander("📋 Paste Moon Data From Client", expanded=False):
         user_input = st.text_area("Moon Data:", height=100)
 
@@ -100,15 +88,11 @@ def show_moon_page():
             st.session_state["parsed_moon_color"] = moon_color
             st.session_state["parsed_current_phase"] = current_phase
             st.session_state["parsed_cycles_remaining"] = cycles_remaining
+            st.rerun()
 
-        st.markdown(
-            """
-            <style>
-            textarea {
-                font-size: 0.8em;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+        st.markdown("""
+        <style> textarea { font-size: 0.8em; } </style>
+        """, unsafe_allow_html=True)
         st.markdown("""Paste the relevant lines from your client. For example:
         <div style="
             font-size: 1.0em; 
@@ -118,9 +102,8 @@ def show_moon_page():
             white-space: pre-wrap; 
             line-height: 1.2;
         ">The red moon is crescent waxing and not visible.
-           [Mana +10%] [Saves -2] [Casting +2] [Regen 0%] [Cycles remaining 69 (34 1/2 Hours)]
-        </div>
-        """, unsafe_allow_html=True)
+           [Mana +10%] [Saves -2] [Casting +2] [Regen 0%] [Cycles remaining 69 (34 1/2 Hours)]</div>""", unsafe_allow_html=True)
+
 
 
 def parse_single_moon_data(user_input: str):
@@ -128,31 +111,35 @@ def parse_single_moon_data(user_input: str):
                    "empty", "crescent waxing", "half waxing", "waxing 3/4"]
 
     lines = user_input.lower().split("\n")
-    moon_color = current_phase = cycles_remaining = None
-    red_line = white_line = black_line = ""
-
     cleaned_lines = [line.replace("three-quarters", "3/4").strip() for line in lines]
 
-    for line in cleaned_lines:
-        if "red moon" in line: red_line = line
-        elif "white moon" in line: white_line = line
-        elif "black moon" in line: black_line = line
+    moon_color = current_phase = cycles_remaining = None
 
-        for phase in moon_phases:
-            if phase in line:
-                current_phase = phase
-                break
+    for i, line in enumerate(cleaned_lines):
+        if line.startswith("[mana") or "cycles remaining" in line:
+            # Look at the line directly above this one
+            if i > 0:
+                moon_line = cleaned_lines[i - 1]
+                if "red moon" in moon_line:
+                    moon_color = "red"
+                elif "white moon" in moon_line:
+                    moon_color = "white"
+                elif "black moon" in moon_line:
+                    moon_color = "black"
 
-        match = re.search(r'cycles remaining\s+(\d+)', line)
-        if match:
-            cycles_remaining = int(match.group(1))
+                for phase in moon_phases:
+                    if phase in moon_line:
+                        current_phase = phase
+                        break
 
-    if cycles_remaining is not None:
-        if "red moon" in red_line: moon_color = "red"
-        elif "white moon" in white_line: moon_color = "white"
-        elif "black moon" in black_line: moon_color = "black"
+            # Extract cycles remaining
+            match = re.search(r'cycles remaining\s+(\d+)', line)
+            if match:
+                cycles_remaining = int(match.group(1))
+            break  # Done after first valid moon block
 
     return moon_color, current_phase, cycles_remaining
+
 
 
 def compute_upcoming_phases(moon_color, current_phase, cycles_remaining, ticks_per_phase):

@@ -105,7 +105,8 @@ def show_directions_page():
 
         # 😇😈 Align filter
         if filter_align:
-            df = df[df["Align"].apply(lambda align: align.lower() == "all" or align in filter_align)]
+            df = df[df["Align"].apply(lambda align: any(f in align for f in filter_align))]
+
 
 
 
@@ -167,7 +168,7 @@ def show_directions_page():
                 new_directions = st.text_area("Directions")
                 new_gateposts = st.text_input("Gateposts")
                 new_levels = st.text_input("Levels")
-                new_align = st.text_input("Align")
+                new_align = st.multiselect("Align", ["Good", "Neutral", "Evil"])
                 new_continent = st.selectbox("Continent", continents)
 
                 if st.form_submit_button("➕ Add Area"):
@@ -177,7 +178,7 @@ def show_directions_page():
                         "Directions": new_directions,
                         "Gateposts": new_gateposts,
                         "Levels": new_levels,
-                        "Align": new_align,
+                        "Align": ", ".join(new_align),  # Stored as comma-separated string
                         "Continent": new_continent
                     }
                     try:
@@ -195,34 +196,43 @@ def show_directions_page():
 
             if selected_area:
                 selected_row = df[df["Area"] == selected_area].iloc[0]
+                current_align = selected_row["Align"].split(", ") if selected_row["Align"] else []
 
                 with st.form("edit_area_form"):
                     col1, col2 = st.columns(2)
-                    starting_point = col1.text_input("Starting Point", selected_row["Starting Point"])
-                    directions = col2.text_area("Directions", selected_row["Directions"])
+                    area = col1.text_input("Area", selected_row["Area"])
+                    starting_point = col2.text_input("Starting Point", selected_row["Starting Point"])
+
+                    directions = st.text_area("Directions", selected_row["Directions"])
                     gateposts = st.text_input("Gateposts", selected_row["Gateposts"])
                     levels = st.text_input("Levels", selected_row["Levels"])
-                    align = st.text_input("Align", selected_row["Align"])
+
+                    current_align = selected_row["Align"].split(", ") if selected_row["Align"] else []
+                    align = st.multiselect("Align", ["Good", "Neutral", "Evil"], default=current_align)
+
                     continent = st.selectbox("Continent", continents, index=continents.index(selected_row["Continent"]))
 
                     col1, col2 = st.columns(2)
                     with col1:
                         if st.form_submit_button("💾 Save Changes"):
                             update_payload = {
+                                "Area": area,
                                 "Starting Point": starting_point,
                                 "Directions": directions,
                                 "Gateposts": gateposts,
                                 "Levels": levels,
-                                "Align": align,
+                                "Align": ", ".join(align),
                                 "Continent": continent
                             }
                             try:
                                 supabase.table("directions").update(update_payload).eq("Area", selected_area).execute()
-                                st.success(f"'{selected_area}' updated successfully!")
+                                st.success(f"'{area}' updated successfully!")
+                                st.session_state["selected_weapon_override"] = area  # optional override if you're using it
                                 st.rerun()
                             except Exception as e:
                                 st.error("Failed to update area.")
                                 st.exception(e)
+
                     with col2:
                         if st.form_submit_button("🗑️ Delete Area"):
                             try:
@@ -232,6 +242,9 @@ def show_directions_page():
                             except Exception as e:
                                 st.error("Failed to delete area.")
                                 st.exception(e)
+
+
+
 
     except Exception as e:
         st.error("Failed to load directions data from Supabase.")

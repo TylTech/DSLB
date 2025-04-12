@@ -37,15 +37,12 @@ def show_bestiary_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # 🔍 Search bar below header for mobile stability
     search_query = st.text_input(
         label="",
         placeholder="🔎 Search Creatures",
         label_visibility="collapsed"
     ).strip().lower()
 
-
-    @st.cache_data(ttl=60)
     def load_bestiary():
         response = supabase.table("bestiary").select("*").execute()
         return pd.DataFrame(response.data)
@@ -62,7 +59,7 @@ def show_bestiary_page():
     if not df.empty:
         st.subheader("📖 Compendium of Creatures")
         st.data_editor(
-            df[["Name", "Level", "Zone", "Health", "Key Words", "Notes", "Lore"]],
+            df[["Name", "Level", "Health", "Zone", "Notes", "Lore"]],
             use_container_width=True,
             hide_index=True,
             disabled=True,
@@ -93,7 +90,6 @@ def show_bestiary_page():
                     result = parse_creature_lore(paste_input.strip())
                     result.update({
                         "Zone": "",
-                        "Key Words": "",
                         "Notes": ""
                     })
                     supabase.table("bestiary").insert(result).execute()
@@ -105,7 +101,6 @@ def show_bestiary_page():
             else:
                 st.warning("Please paste some lore first.")
 
-        # 🛠️ Manual Entry
         st.markdown("#### 🛠️ Manually Enter Creature Information")
         with st.form("add_creature_form"):
             col1, col2 = st.columns(2)
@@ -113,10 +108,9 @@ def show_bestiary_page():
             new_level = col2.text_input("Level")
 
             col3, col4 = st.columns(2)
-            new_zone = col3.text_input("Zone")
-            new_health = col4.text_input("Health")
+            new_health = col3.text_input("Health")
+            new_zone = col4.text_input("Zone")
 
-            new_keywords = st.text_input("Key Words")
             new_notes = st.text_input("Notes")
 
             submitted = st.form_submit_button("➕ Add Creature")
@@ -127,7 +121,6 @@ def show_bestiary_page():
                         "Level": new_level,
                         "Zone": new_zone,
                         "Health": new_health,
-                        "Key Words": new_keywords,
                         "Notes": new_notes,
                         "Lore": "Lore coming soon..."
                     }).execute()
@@ -143,15 +136,17 @@ def show_bestiary_page():
             selected_row = df_raw[df_raw["Name"] == creature_to_edit].iloc[0]
 
             with st.form("edit_creature_form"):
-                edit_name = st.text_input("Name", value=selected_row["Name"])
+                # Row 1: Name + Level
                 col1, col2 = st.columns(2)
-                edit_level = col1.text_input("Level", value=selected_row["Level"])
-                edit_zone = col2.text_input("Zone", value=selected_row["Zone"])
+                edit_name = col1.text_input("Name", value=selected_row["Name"])
+                edit_level = col2.text_input("Level", value=selected_row["Level"])
 
+                # Row 2: Health + Zone
                 col3, col4 = st.columns(2)
                 edit_health = col3.text_input("Health", value=selected_row["Health"])
-                edit_keywords = col4.text_input("Key Words", value=selected_row.get("Key Words", ""))
+                edit_zone = col4.text_input("Zone", value=selected_row["Zone"])
 
+                # Row 3: Notes
                 edit_notes = st.text_input("Notes", value=selected_row.get("Notes", ""))
 
                 col1, col2 = st.columns(2)
@@ -162,7 +157,6 @@ def show_bestiary_page():
                             "Level": edit_level,
                             "Zone": edit_zone,
                             "Health": edit_health,
-                            "Key Words": edit_keywords,
                             "Notes": edit_notes
                         }).eq("id", selected_row["id"]).execute()
                         st.success(f"Creature '{edit_name}' updated!")

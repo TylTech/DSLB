@@ -36,12 +36,11 @@ def show_summons_page():
         label_visibility="collapsed"
     )
 
-
     filtered_df = df if selected_continent == "All" else df[df["Continent"] == selected_continent]
 
     st.subheader(f"📜 Summons in {selected_continent if selected_continent != 'All' else 'All Continents'}")
     st.data_editor(
-        filtered_df[["Summon", "Levels", "Hit Points", "Attributes", "Key Words"]],
+        filtered_df[["Summon", "Level", "Hit Points", "Attributes", "Key Words"]],
         use_container_width=True,
         hide_index=True,
         disabled=True,
@@ -52,7 +51,7 @@ def show_summons_page():
         with st.form("add_summon_form"):
             col1, col2 = st.columns(2)
             summon = col1.text_input("Summon")
-            levels = col2.text_input("Levels")
+            level = col2.text_input("Level")
 
             col3, col4 = st.columns(2)
             hit_points = col3.text_input("Hit Points")
@@ -65,7 +64,7 @@ def show_summons_page():
                 try:
                     supabase.table("summons").insert({
                         "Summon": summon,
-                        "Levels": levels,
+                        "Level": level,
                         "Hit Points": hit_points,
                         "Attributes": attributes,
                         "Key Words": keywords,
@@ -93,13 +92,14 @@ def show_summons_page():
 
             with st.form("edit_summon_form"):
                 col1, col2 = st.columns(2)
-                levels = col1.text_input("Levels", selected_row["Levels"])
-                hit_points = col2.text_input("Hit Points", selected_row["Hit Points"])
+                summon = col1.text_input("Summon", selected_row["Summon"])
+                level = col2.text_input("Level", selected_row["Level"])
 
                 col3, col4 = st.columns(2)
-                attributes = col3.text_input("Attributes", selected_row["Attributes"])
-                keywords = col4.text_input("Key Words", selected_row["Key Words"])
+                hit_points = col3.text_input("Hit Points", selected_row["Hit Points"])
+                attributes = col4.text_input("Attributes", selected_row["Attributes"])
 
+                keywords = st.text_input("Key Words", selected_row["Key Words"])
                 continent = st.selectbox("Continent", continents, index=continents.index(selected_row["Continent"]))
 
                 col1, col2 = st.columns(2)
@@ -107,7 +107,8 @@ def show_summons_page():
                     if st.form_submit_button("💾 Save Changes"):
                         try:
                             supabase.table("summons").update({
-                                "Levels": levels,
+                                "Summon": summon,
+                                "Level": level,
                                 "Hit Points": hit_points,
                                 "Attributes": attributes,
                                 "Key Words": keywords,
