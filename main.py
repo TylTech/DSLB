@@ -84,7 +84,7 @@ def show_welcome_page():
             pointer-events: none;
         }}
 
-        /* 📱 Mobile layout (below 768px) */
+        /* 📱 Mobile layout (fade & fill) */
         @media screen and (max-width: 768px) {{
             .mascot-background {{
                 right: 0;
@@ -94,6 +94,7 @@ def show_welcome_page():
                 height: 100vh;
                 background-position: center center;
                 background-size: cover;
+                opacity: 0.2;  /* 👈 Soft ghostly presence on mobile */
             }}
         }}
 
@@ -106,6 +107,7 @@ def show_welcome_page():
         }}
         </style>
     """.format(_get_base64_image()), unsafe_allow_html=True)
+
 
 
 
