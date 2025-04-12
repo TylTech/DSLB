@@ -23,8 +23,12 @@ def _get_base64_image():
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
+def _get_mobile_base64_image():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_mascot_mobile.png")
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
-# 💅 Global style tweaks (mascot + sidebar)
+# 💅 Global style tweaks (mascot + mobile handling)
 st.markdown("""
     <style>
     div[data-baseweb="radio"] > div {
@@ -63,17 +67,15 @@ st.markdown("""
         pointer-events: none;
     }
 
-    /* 📱 Mobile mascot fade */
+    /* 📱 Mobile mascot image – centered, scaled, clean */
     @media screen and (max-width: 768px) {
         .mascot-background {
-            right: 0;
-            left: 0;
-            top: 0;
+            background-image: url("data:image/png;base64,%s");
+            background-position: center top;
+            background-size: contain;
             width: 100vw;
             height: 100vh;
-            background-position: center center;
-            background-size: cover;
-            opacity: 0.2;
+            opacity: 1.0;
         }
     }
 
@@ -85,10 +87,8 @@ st.markdown("""
     html, body {
         overflow: hidden;
     }
-
-
     </style>
-""" % (_get_base64_image()), unsafe_allow_html=True)
+""" % (_get_base64_image(), _get_mobile_base64_image()), unsafe_allow_html=True)
 
 # 📍 Sidebar nav
 with st.sidebar:
