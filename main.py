@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+import base64
 from weapons.weapons_page import show_weapons_page
 from effects.effects_page import show_effects_page
 from directions.directions_page import show_directions_page
@@ -15,7 +17,7 @@ if "temp_page" in st.session_state:
     st.session_state.page = st.session_state.temp_page
     del st.session_state.temp_page
 
-# 💅 Style tweaks
+# 💅 Global style tweaks
 st.markdown("""
     <style>
     div[data-baseweb="radio"] > div {
@@ -35,13 +37,12 @@ st.markdown("""
         text-decoration: underline;
         color: black;
     }
-    /* 🔒 Hide GitHub footer link */
     footer {visibility: hidden;}
-    .css-164nlkn {display: none;}  /* Extra layer for some Streamlit versions */
+    .css-164nlkn {display: none;}
     </style>
 """, unsafe_allow_html=True)
 
-# 📍 Sidebar nav (updated order)
+# 📍 Sidebar nav
 with st.sidebar:
     st.title("DSL Buddy")
     page = st.radio("Choose a tab:", [
@@ -56,9 +57,53 @@ with st.sidebar:
         "🧬 Race/Class Comparison"
     ], key="page")
 
+# 🧠 Helper function to convert image to base64 for background use
+def _get_base64_image():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_mascot.png")
+    with open(path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
 # 🧙 Welcome screen
 def show_welcome_page():
+    # 🧙 Add mascot as fixed, faded background
+    st.markdown("""
+        <style>
+        .mascot-background {{
+            position: fixed;
+            top: 0;
+            right: 240px;
+            width: 32vw;                /* 👈 Smaller width = smaller image */
+            height: 100vh;
+            background-image: url("data:image/png;base64,{}");
+            background-repeat: no-repeat;
+            background-position: right center;
+            background-size: contain;
+            opacity: 1.0;
+            z-index: 0;
+            pointer-events: none;
+        }}
+        .welcome-foreground {{
+            position: relative;
+            z-index: 1;
+        }}
+        html, body {{
+            overflow: hidden;
+        }}
+        </style>
+    """.format(_get_base64_image()), unsafe_allow_html=True)
+
+
+
+
+
+
+
+    st.markdown('<div class="mascot-background"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="welcome-foreground">', unsafe_allow_html=True)
+
     st.title("🧙‍♂️ Welcome to DSL Buddy")
+
     st.markdown("""
         <div style='font-size:20px; margin-top:1rem;'>
             Your personal buddy for all things DSL!
@@ -83,13 +128,14 @@ def show_welcome_page():
             st.rerun()
 
     st.markdown("""
-        </div>
-        <div style='margin-top:3rem; font-size:16px; color:gray;'>
+        </div> <!-- close buttons div -->
+        <div style='margin-top:3rem; font-size:20px; color:gray;'>
             © Tyltech, 2025. 🧙‍♂️👊
         </div>
+        </div> <!-- close welcome-foreground -->
     """, unsafe_allow_html=True)
 
-# 🧭 Page router (updated to match new order)
+# 🔀 Page router
 if page == "🏰 Welcome":
     show_welcome_page()
 elif page == "🧭 Directions":
