@@ -73,7 +73,7 @@ def show_welcome_page():
             position: fixed;
             top: 0;
             right: 240px;
-            width: 32vw;                /* 👈 Smaller width = smaller image */
+            width: 32vw;
             height: 100vh;
             background-image: url("data:image/png;base64,{}");
             background-repeat: no-repeat;
@@ -83,6 +83,20 @@ def show_welcome_page():
             z-index: 0;
             pointer-events: none;
         }}
+
+        /* 📱 Mobile layout (below 768px) */
+        @media screen and (max-width: 768px) {{
+            .mascot-background {{
+                right: 0;
+                left: 0;
+                top: 0;
+                width: 100vw;
+                height: 100vh;
+                background-position: center center;
+                background-size: cover;
+            }}
+        }}
+
         .welcome-foreground {{
             position: relative;
             z-index: 1;
@@ -92,6 +106,7 @@ def show_welcome_page():
         }}
         </style>
     """.format(_get_base64_image()), unsafe_allow_html=True)
+
 
 
 
