@@ -17,24 +17,27 @@ if "temp_page" in st.session_state:
     st.session_state.page = st.session_state.temp_page
     del st.session_state.temp_page
 
-# 🧠 Helper functions to load background images
+# 🧠 Load mascot backgrounds
 def _get_base64_image():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_mascot.png")
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-def load_scroll_mascot():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_scroll_mascot.png")
+def load_mobile_mascot():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_mascot_mobile.png")
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-# 💅 Global style tweaks (mascot + mobile handling)
-st.markdown("""
+desktop_mascot = _get_base64_image()
+mobile_mascot = load_mobile_mascot()
+
+# 💅 Global style tweaks
+st.markdown(f"""
     <style>
-    div[data-baseweb="radio"] > div {
+    div[data-baseweb="radio"] > div {{
         margin-bottom: 1rem;
-    }
-    .stButton>button {
+    }}
+    .stButton>button {{
         background: none;
         color: #444;
         font-size: 18px;
@@ -43,47 +46,55 @@ st.markdown("""
         margin: 0 0 2px 0;
         border: none;
         cursor: pointer;
-    }
-    .stButton>button:hover {
+    }}
+    .stButton>button:hover {{
         text-decoration: underline;
         color: black;
-    }
-    footer {visibility: hidden;}
-    .css-164nlkn {display: none;}
+    }}
+    footer {{visibility: hidden;}}
+    .css-164nlkn {{display: none;}}
 
-    /* 🧙 Desktop background mascot */
-    .mascot-background {
+    /* Shared mascot container */
+    .mascot-background {{
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background-image: url("data:image/png;base64,%s");
         background-repeat: no-repeat;
-        background-position: right center;
-        background-size: cover;
         opacity: 1.0;
         z-index: 0;
         pointer-events: none;
-    }
+    }}
 
-    /* 📱 Mobile hides background */
-    @media screen and (max-width: 768px) {
-        .mascot-background {
-            display: none;
-        }
-    }
+    /* Desktop */
+    @media screen and (min-width: 769px) {{
+        .mascot-background {{
+            background-image: url("data:image/png;base64,{desktop_mascot}");
+            background-size: cover;
+            background-position: right center;
+        }}
+    }}
 
-    .welcome-foreground {
+    /* Mobile */
+    @media screen and (max-width: 768px) {{
+        .mascot-background {{
+            background-image: url("data:image/png;base64,{mobile_mascot}");
+            background-size: contain;
+            background-position: right top;
+        }}
+    }}
+
+    .welcome-foreground {{
         position: relative;
         z-index: 1;
-    }
+    }}
 
-    html, body {
+    html, body {{
         overflow: hidden;
-    }
+    }}
     </style>
-""" % (_get_base64_image()), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # 📍 Sidebar nav
 with st.sidebar:
@@ -104,24 +115,8 @@ with st.sidebar:
 def show_welcome_page():
     st.markdown('<div class="mascot-background"></div>', unsafe_allow_html=True)
 
-    scroll_mascot = load_scroll_mascot()
     st.markdown("""
         <div class="welcome-foreground" style="position: relative;">
-    """, unsafe_allow_html=True)
-
-    # Only show scroll mascot on mobile
-    st.markdown(f"""
-        <div class="scroll-mascot-mobile" style="display:none;">
-            <img src="data:image/png;base64,{scroll_mascot}" 
-                 style="width: 200px; max-width: 40vw; margin: 1rem auto; display: block;" />
-        </div>
-        <style>
-            @media screen and (max-width: 768px) {{
-                .scroll-mascot-mobile {{
-                    display: block;
-                }}
-            }}
-        </style>
     """, unsafe_allow_html=True)
 
     st.title("🧙‍♂️ Welcome to DSL Buddy")
