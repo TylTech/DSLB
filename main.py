@@ -17,7 +17,7 @@ if "temp_page" in st.session_state:
     st.session_state.page = st.session_state.temp_page
     del st.session_state.temp_page
 
-# 🧠 Load mascot backgrounds
+# 🧠 Load background images
 def _get_base64_image():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_mascot.png")
     with open(path, "rb") as f:
@@ -28,8 +28,21 @@ def load_mobile_mascot():
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
+def load_sidebar_bg():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_sidebar.png")
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+def load_sidebar_bg_mobile():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dslb_sidebar_mobile.png")
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+# 🧙 Load images
 desktop_mascot = _get_base64_image()
 mobile_mascot = load_mobile_mascot()
+sidebar_bg = load_sidebar_bg()
+sidebar_bg_mobile = load_sidebar_bg_mobile()
 
 # 💅 Global style tweaks
 st.markdown(f"""
@@ -67,7 +80,7 @@ st.markdown(f"""
         pointer-events: none;
     }}
 
-    /* Desktop */
+    /* Desktop mascot */
     @media screen and (min-width: 769px) {{
         .mascot-background {{
             background-image: url("data:image/png;base64,{desktop_mascot}");
@@ -76,12 +89,29 @@ st.markdown(f"""
         }}
     }}
 
-    /* Mobile */
+    /* Mobile mascot */
     @media screen and (max-width: 768px) {{
         .mascot-background {{
             background-image: url("data:image/png;base64,{mobile_mascot}");
             background-size: contain;
             background-position: right top;
+        }}
+    }}
+
+    /* 🧭 Sidebar background (Desktop) */
+    section[data-testid="stSidebar"] > div:first-child {{
+        background-image: url("data:image/png;base64,{sidebar_bg}");
+        background-size: cover;
+        background-position: top right;
+        background-repeat: no-repeat;
+    }}
+
+    /* 📱 Sidebar background (Mobile) */
+    @media screen and (max-width: 768px) {{
+        section[data-testid="stSidebar"] > div:first-child {{
+            background-image: url("data:image/png;base64,{sidebar_bg_mobile}");
+            background-size: contain;
+            background-position: bottom center;
         }}
     }}
 
