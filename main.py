@@ -9,6 +9,7 @@ from summons.summons_page import show_summons_page
 from bestiary.bestiary_page import show_bestiary_page
 from comparison.comparison_page import show_comparison_page
 from moon.moon_page import show_moon_page
+from damcalc.damcalc_page import show_damcalc_page  # Import the new page with updated name
 
 st.set_page_config(page_title="DSL Buddy", layout="wide")
 
@@ -138,7 +139,8 @@ with st.sidebar:
         "✨ Summons",
         "📖 Bestiary",
         "🌕 Moon Tracker",
-        "🧬 Race/Class Comparison"
+        "🧬 Race/Class Comparison",
+        "📊 Damage Calculator"  # Updated menu label
     ], key="page")
 
 # 🧙 Welcome screen
@@ -167,6 +169,7 @@ def show_welcome_page():
         ("📖 Bestiary!", "📖 Bestiary"),
         ("🌕 Moon Tracker FOR MAXIMUM GAINS!", "🌕 Moon Tracker"),
         ("🧬 Race/Class Comparison!", "🧬 Race/Class Comparison"),
+        ("📊 Calculate Combat Damage!", "📊 Damage Calculator"),  # Updated button text
     ]
 
     for text, tab in nav_links:
@@ -201,3 +204,5 @@ elif page == "🌕 Moon Tracker":
     show_moon_page()
 elif page == "🧬 Race/Class Comparison":
     show_comparison_page()
+elif page == "📊 Damage Calculator":  # Updated route label
+    show_damcalc_page()  # Updated function call
