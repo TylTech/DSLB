@@ -2,6 +2,8 @@ import streamlit as st
 import re
 import pandas as pd
 import io
+import pprint
+import streamlit.components.v1 as components
 
 def show_damcalc_page():
     # 📊 Header + 🏰 Home
@@ -47,7 +49,8 @@ def show_damcalc_page():
             
             # Analyze button
             analyze_button = st.button("📊 Analyze Damage", type="primary", use_container_width=True)
-    
+            
+ 
     with options_tab:
         # Options similar to the original script
         col1, col2 = st.columns(2)
@@ -55,50 +58,50 @@ def show_damcalc_page():
         with col1:
             st.subheader("Display Options")
             display_options = {
-                "damage_done": st.checkbox("Total Damage Done by Source", value=True),
-                "damage_taken": st.checkbox("Total Damage Taken by Target", value=True),
-                "damage_types": st.checkbox("Total Damage Dealt by Type", value=True),
-                "damage_details": st.checkbox("Total Damage Taken by Type", value=True)
+                "damage_done": st.checkbox("Damage Done by Source", value=True),
+                "damage_taken": st.checkbox("Damage Taken by Target", value=True),
+                "pvp_damage_done": st.checkbox("PvP Damage Done", value=True),
+                "pvp_damage_taken": st.checkbox("PvP Damage Taken", value=True),
+                "damage_types": st.checkbox("Damage by Type", value=True),
+                "damage_details": st.checkbox("Damage Details", value=True),
+                "hide_zero_damage": st.checkbox("Hide Zero Damage", value=True)
             }
         
         with col2:
             st.subheader("Export Options")
             export_format = st.radio(
                 "Export Format:",
-                ["CSV", "Excel", "Text"],
+                ["CSV", "Excel", "Text", "Markdown"],
                 index=0
             )
     
+
+
     # Process and analyze log data when button is clicked
     if analyze_button:
-        log_content = ""
-        
-        # Get log content from either text area or uploaded file
+        # Process the log and store results in session state
         if log_text:
             log_content = log_text
         elif uploaded_file is not None:
             log_content = uploaded_file.getvalue().decode("utf-8")
-        
-        # Process the log if we have content
+        else:
+            log_content = ""
+
         if log_content:
-            # Set character name for replacing "You" in logs
             player_name = char_name if char_name else "Player"
-            
-            # Parse and analyze the log
-            damage_data = analyze_damage_log(log_content, player_name)
-            
-            # Display results
-            display_damage_reports(damage_data, display_options)
-            
-            # Export button
-            st.download_button(
-                label=f"💾 Export as {export_format}",
-                data=export_damage_data(damage_data, export_format),
-                file_name=f"damage_analysis.{export_format.lower()}",
-                mime={"CSV": "text/csv", "Excel": "application/vnd.ms-excel", "Text": "text/plain"}[export_format]
-            )
+            st.session_state.damage_data = analyze_damage_log(log_content, player_name)
+            st.session_state.char_name = player_name
         else:
             st.warning("Please paste a combat log or upload a log file to analyze.")
+
+
+    damage_data = st.session_state.get("damage_data")
+    char_name = st.session_state.get("char_name", "")
+
+    # Display stored damage data if available
+    if damage_data:
+        display_damage_reports(damage_data, display_options, char_name)
+
 
 
 def clean_entity_name(name, player_name):
@@ -120,32 +123,53 @@ def clean_entity_name(name, player_name):
             if pattern.lower() in name.lower():
                 return group_name
     
-    # Remove decorations and markers
-    name = re.sub(r'[*=<>]+(.*?)[*=<>]+', r'\1', name)
+    # Remove decorations and markers - improved to handle ***, ===, etc.
+    name = re.sub(r'[*=<>]+', '', name)  # Remove all decorative characters completely
     name = re.sub(r'[\(\[\{].*?[\)\]\}]', '', name)
     name = re.sub(r"'s\s+", "", name)
     name = re.sub(r'[!.,]$', '', name)
     
     return name.strip()
 
-
-def is_player_character(name):
+def is_player_character(name, player_name):
     """
     Determine if a name is likely a player character.
-    In many games, player names typically:
     - Have proper capitalization (first letter uppercase)
     - Don't contain 'a' or 'an' as first word
     - Don't have common mob descriptors
+    - Player's own name is always considered a player character
+    - Don't count as player if name contains a space (for PvP table)
     """
-    # Check if it starts with "a" or "an" (common for mobs)
-    if re.match(r'^(a|an)\s', name.lower()):
+    name = name.strip()
+    player_name = player_name.strip()
+
+    if not name:
         return False
-    
-    # Check if it's properly capitalized like a name
-    if name and name[0].isupper() and not name.isupper():
+
+    if name.lower() == player_name.lower():
         return True
-    
+
+    # Per requirements, don't count names with spaces (like "Huwen Kamak") as players for PvP table
+    if " " in name:
+        return False
+
+    if re.match(r'^(a|an|the)\s', name.lower()):
+        return False
+
+    mob_patterns = [
+        "guard", "scout", "sword", "dagger", "knife", "staff", 
+        "pointed", "fluted", "burrow", "wood", "stone", "weapon"
+    ]
+
+    if any(pattern in name.lower() for pattern in mob_patterns):
+        return False
+
+    # Proper check for capitalization
+    if name[0].isupper() and not name.isupper():
+        return True
+
     return False
+
 
 def extract_entity_name(text, player_name):
     """Extract clean entity name from combat text."""
@@ -176,8 +200,8 @@ def extract_entity_name(text, player_name):
         return parts[0].strip()
     
     # For normal entity names (without possessives)
-    # Remove any decorations or formatting
-    name = re.sub(r'[*=<>]+', '', text)
+    # Remove any decorations or formatting - improved to handle all special characters
+    name = re.sub(r'[*=<>]+', '', text)  # Remove decorative characters completely
     
     # Remove type markers like (fire), [undead], etc.
     name = re.sub(r'[\(\[\{].*?[\)\]\}]', '', name)
@@ -210,6 +234,9 @@ def extract_attack_type(source_text):
     # Remove location information
     source_text = re.sub(r'\[\s*[^\]]+\s*\]\s*', '', source_text)
     
+    # Clean decorative characters from attack types
+    source_text = re.sub(r'[*=<>]+', '', source_text)
+    
     # CMUD logic: Extract everything after the possessive marker
     if "'s " in source_text:
         # Get the part after the last possessive marker
@@ -241,6 +268,9 @@ def extract_name_and_attack(text):
     
     # Handle special case where >>> is attached to name
     text = text.replace(">>>", "").replace("<<<", "").strip()
+    
+    # Clean decorative characters like asterisks and equal signs
+    text = re.sub(r'[*=<>]+', '', text)
     
     # First check if this is a known mob/weapon name
     # This handles cases like "a burrow guard's pointed staff"
@@ -290,7 +320,6 @@ def should_skip_line(source, target):
 
 def analyze_damage_log(log_content, player_name="Player"):
     """Parse and analyze a DSL combat log, extracting damage information."""
-    # Define damage values for combat verbs
     damage_values = {
         "scratches": 2.5,
         "grazes": 6.5,
@@ -318,38 +347,33 @@ def analyze_damage_log(log_content, player_name="Player"):
         "INDESCRIBABLE": 263,
         "UNSPEAKABLE": 300
     }
-    
-    # Initialize data structures
+
     damage_data = {
-        "damage_done": {},         # Source -> [total_damage, hit_count]
-        "damage_taken": {},        # Target -> [total_damage, hit_count]
-        "damage_details": {},      # Source -> Target -> [total_damage, hit_count]
-        "damage_types": {}         # Source -> Type -> [total_damage, hit_count]
+        "damage_done": {},
+        "damage_taken": {},
+        "damage_details": {},
+        "damage_types": {},
+        "pvp_damage_done": {},  # PvP damage done
+        "pvp_damage_taken": {}  # New table for PvP damage taken (PC to PC)
     }
-    
-    # Skip patterns from CMUD's DMFakeCheck function
+
     skip_patterns = [
-        # Chat patterns
         "answers ", "ask ", "tells ", "tell ", "says ", 
         "gossips ", "yells ", "clans ", "quests ",
         "the group ", "OOC: ", "OOC Clan: ",
         "Bloodbath: ", "Kingdom: ", "radios ", "grats ",
         "shouts ", "[Newbie]: ", "auctions: ",
-        
-        # Special weapon effects to skip
         "draws life from", "is struck by lightning", "lightning bolt",
         "flash of holy power", "holy smite", "The bolt", 
         "lightning bolt leaps", "mighty blow from", 
         "hits the ground", "transfer to", "some "
     ]
-    
-    # Process log line by line
+
     for line in log_content.splitlines():
         line = line.strip()
         if not line:
             continue
 
-        # Skip noise and fluff
         if any(skip in line for skip in skip_patterns):
             continue
         if "floats" in line or "death cry" in line or "enters a panic" in line:
@@ -358,106 +382,111 @@ def analyze_damage_log(log_content, player_name="Player"):
             continue
 
         # ✅ Special case: cut throat
-        # Handle cut throat with embedded ALL CAPS verbs like <<< ERADICATES >>>
-        if "cut throat" in line:
-            throat_match = re.search(
-                r"\] (.*?)'s cut throat\s+<<<\s+([A-Z]+)\s+>>>\s+(.*?)(!|\.|$)", line)
-            if throat_match:
-                source_raw = throat_match.group(1).strip()
-                verb = throat_match.group(2).strip()
-                target_raw = throat_match.group(3).strip()
+        throat_match = re.search(
+            r"\] (.*?)'s cut throat\s+<<<\s+([A-Z]+)\s+>>>\s+(.*?)(!|\.|$)", line)
+        if "cut throat" in line and throat_match:
+            source_raw = throat_match.group(1).strip()
+            verb = throat_match.group(2).strip()
+            target_raw = throat_match.group(3).strip()
 
-                # Clean up names and replace "you" if needed
-                source = player_name if source_raw.lower() == "you" else source_raw
-                target = player_name if target_raw.lower() == "you" else target_raw
+            source = player_name if source_raw.lower() == "you" else source_raw
+            target = player_name if target_raw.lower() == "you" else target_raw
 
-                # Normalize both names
-                source = extract_entity_name(source, player_name)
-                target = extract_entity_name(target, player_name)
+            source = extract_entity_name(source, player_name)
+            target = extract_entity_name(target, player_name)
+            damage_value = damage_values.get(verb.upper(), 0)
 
-                # Get damage value from the big verb
-                damage_value = damage_values.get(verb.upper(), 0)
-
-                # Log it as a cut throat attack
-                record_damage(damage_data, source, target, damage_value, "cut throat")
-                continue
-
+            record_damage(damage_data, source, target, damage_value, "cut throat", player_name)
+            continue
 
         # ✅ Standard damage types
         for verb, damage_value in damage_values.items():
-            # Handle both normal and ALLCAPS (CMUD) verbs
-            pattern = rf"\] (.*?) (?:{verb}s?|<<< {verb} >>>) (.*?)(!|\.|$)"
+            pattern = rf"(.*?)'s (.*?)\s+{verb.upper()}\s+(.*?)($|!|\.)"
             match = re.search(pattern, line, re.IGNORECASE)
+
             if not match:
-                continue
+                pattern_alt = rf"(.*?)\s+{verb.upper()}\s+(.*?)($|!|\.)"
+                match = re.search(pattern_alt, line, re.IGNORECASE)
 
-            source_raw = match.group(1).strip()
-            target_raw = match.group(2).strip().replace("!", "").replace(".", "").strip()
+            if match and len(match.groups()) >= 3:
+                if "'s" in match.group(1):
+                    source_raw = match.group(1).split("'s")[0]
+                    attack_type = match.group(2)
+                else:
+                    source_raw = match.group(1)
+                    attack_type = match.group(2)
 
-            # Resolve attack type from source string (CMUD mode 3 style)
-            if "'s " in source_raw:
-                parts = source_raw.split("'s ", 1)
-                source = parts[0].strip()
-                attack_type = parts[1].strip()
-            else:
-                source = source_raw
-                attack_type = verb.lower()
+                target_raw = match.group(3).strip()
+                attack_type = attack_type.strip()
 
-            # Replace "You" with player name
-            if source.lower() == "you":
-                source = player_name
-            if target_raw.lower() == "you":
-                target = player_name
-            else:
-                target = target_raw
+                source = player_name if source_raw.strip().lower() == "you" else source_raw.strip()
+                target = player_name if target_raw.strip().lower() == "you" else target_raw.strip()
 
-            # Clean up square-bracketed room/location noise
-            source = re.sub(r'\[\s*[^\]]+\s*\]', '', source)
-            target = re.sub(r'\[\s*[^\]]+\s*\]', '', target)
+                source = re.sub(r'\[\s*[^\]]+\s*\]', '', source)
+                target = re.sub(r'\[\s*[^\]]+\s*\]', '', target)
+                
+                # Clean the attack type of decorative characters
+                attack_type = re.sub(r'[*=<>]+', '', attack_type)
 
-            record_damage(damage_data, source, target, damage_value, attack_type)
-            break  # We matched a damage verb, done with this line
+                record_damage(damage_data, source, target, damage_value, attack_type, player_name)
+                break  # Done with this line
 
-    
-    # Calculate percentages and sort data
     calculate_percentages(damage_data)
-    
     return damage_data
 
 
-def record_damage(damage_data, source, target, damage_value, damage_type):
+def record_damage(damage_data, source, target, damage_value, damage_type, player_name):
     """Record damage in the various tracking dictionaries."""
-    # Skip invalid entries
     if not source or not target:
         return
-        
+
+    # Clean names
+    source = clean_entity_name(source, player_name)
+    target = clean_entity_name(target, player_name)
+
+    # Clean + normalize damage type
+    damage_type = re.sub(r'[*=<>]+', '', damage_type).strip().lower()
+
     # Record damage done by source
     if source not in damage_data["damage_done"]:
         damage_data["damage_done"][source] = [0, 0]
     damage_data["damage_done"][source][0] += damage_value
     damage_data["damage_done"][source][1] += 1
-    
+
     # Record damage taken by target
     if target not in damage_data["damage_taken"]:
         damage_data["damage_taken"][target] = [0, 0]
     damage_data["damage_taken"][target][0] += damage_value
     damage_data["damage_taken"][target][1] += 1
-    
-    # Record detailed source->target damage
+
+    # Record detailed damage
     detail_key = f"{source} -> {target}"
     if detail_key not in damage_data["damage_details"]:
         damage_data["damage_details"][detail_key] = [0, 0, damage_type]
     else:
         damage_data["damage_details"][detail_key][0] += damage_value
         damage_data["damage_details"][detail_key][1] += 1
-        # Keep the original damage type
-    
-    # Record damage by type for each source
+
+    # Record damage by type
     type_key = f"{source} -> {damage_type}"
     if type_key not in damage_data["damage_types"]:
         damage_data["damage_types"][type_key] = [0, 0]
     damage_data["damage_types"][type_key][0] += damage_value
     damage_data["damage_types"][type_key][1] += 1
+
+    # PvP damage tracking
+    if is_player_character(source, player_name) and is_player_character(target, player_name):
+        if source not in damage_data["pvp_damage_done"]:
+            damage_data["pvp_damage_done"][source] = [0, 0]
+        damage_data["pvp_damage_done"][source][0] += damage_value
+        damage_data["pvp_damage_done"][source][1] += 1
+
+        if target not in damage_data["pvp_damage_taken"]:
+            damage_data["pvp_damage_taken"][target] = [0, 0]
+        damage_data["pvp_damage_taken"][target][0] += damage_value
+        damage_data["pvp_damage_taken"][target][1] += 1
+
+
 
 
 def calculate_percentages(damage_data):
@@ -509,261 +538,965 @@ def calculate_percentages(damage_data):
                 damage_data[category][key].extend([percentage, average])
 
 
-def display_damage_reports(damage_data, display_options):
-    """Display damage reports based on the selected options."""
+def display_damage_reports(damage_data, display_options, player_name):
+    """Display damage reports in tables with the nice HTML styling."""
     
-    # 1. Total Damage Done by Source
+    # 1. Damage Done by Source
     if display_options["damage_done"] and damage_data["damage_done"]:
-        st.subheader("🗡️ Total Damage Done by Source")
+        st.subheader("🗡️ Damage Done by Source")
         
         # Create a DataFrame for sources
         source_data = []
         for source, values in damage_data["damage_done"].items():
             source_data.append({
                 "Source": source,
-                "Amount": round(values[0], 1),
-                "Percentage": f"{values[2]:.1f}%"
+                "Damage": round(values[0], 1),
+                "Hits": values[1],
+                "Average": round(values[3], 1) if len(values) > 3 else 0,
+                "%": f"{values[2]:.1f}%" if len(values) > 2 else "0.0%"
             })
         
         # Convert to DataFrame, sort by damage, and display
         if source_data:
             df_source = pd.DataFrame(source_data)
-            df_source = df_source.sort_values("Amount", ascending=False).reset_index(drop=True)
-            st.dataframe(df_source, use_container_width=True)
+            df_source = df_source.sort_values("Damage", ascending=False).reset_index(drop=True)
             
+            # Display with sortable HTML table
+            display_sortable_table(df_source, "damage-done-table")
     
-    # 2. Total Damage Taken by Target
+    # 2. Damage Taken by Target
     if display_options["damage_taken"] and damage_data["damage_taken"]:
-        st.subheader("🛡️ Total Damage Taken by Target")
+        st.subheader("🛡️ Damage Taken by Target")
         
         # Create a DataFrame for targets
         target_data = []
         for target, values in damage_data["damage_taken"].items():
             target_data.append({
                 "Target": target,
-                "Percentage": f"{values[2]:.1f}%",
-                "Amount": round(values[0], 1)
+                "Damage": round(values[0], 1),
+                "Hits": values[1],
+                "Average": round(values[3], 1) if len(values) > 3 else 0,
+                "%": f"{values[2]:.1f}%" if len(values) > 2 else "0.0%"
             })
         
         # Convert to DataFrame, sort by damage, and display
         if target_data:
             df_target = pd.DataFrame(target_data)
-            df_target = df_target.sort_values("Amount", ascending=False).reset_index(drop=True)
-            st.dataframe(df_target, use_container_width=True)
+            df_target = df_target.sort_values("Damage", ascending=False).reset_index(drop=True)
+            
+            # Display with sortable HTML table
+            display_sortable_table(df_target, "damage-taken-table")
     
-    # 3. Total Damage by Attack Type for each Source
-    if display_options["damage_types"] and damage_data["damage_types"]:
-        st.subheader("🔥 Damage by Attack Type")
+    # 3. PvP Damage Done
+    if display_options["pvp_damage_done"] and damage_data["pvp_damage_done"]:
+        st.subheader("⚔️ PvP Damage Done")
         
-        # Create DataFrame for damage by attack type
-        damage_type_data = []
-        
-        # Extract attack type data
-        for key, values in damage_data["damage_types"].items():
-            parts = key.split(" -> ")
-            if len(parts) == 2:
-                source = parts[0]
-                attack_type = parts[1]
-                
-                damage_type_data.append({
-                    "Source": source,
-                    "Attack Type": attack_type,
-                    "Amount": round(values[0], 1),
-                    "Hits": values[1],
-                    "Avg. Damage": round(values[3], 1),
-                    "Percentage": f"{values[2]:.1f}%"
-                })
-        
-        # Convert to DataFrame, sort, and display
-        if damage_type_data:
-            df_type = pd.DataFrame(damage_type_data)
-            df_type = df_type.sort_values(["Source", "Amount"], ascending=[True, False]).reset_index(drop=True)
-            st.dataframe(df_type, use_container_width=True)
-    
-    # 4. Total Damage Taken by Type
-    if display_options["damage_details"] and damage_data["damage_details"]:
-        st.subheader("📝 Total Damage Taken by Type")
-        
-        # Create DataFrame for damage taken by type
-        damage_taken_data = []
-        
-        # We need to extract data from the detailed records, but reorganize for the taken perspective
-        for key, values in damage_data["damage_details"].items():
-            parts = key.split(" -> ")
-            if len(parts) == 2:
-                source, target = parts
-                damage_type = values[2]  # Type is stored in position 2
-                
-                damage_taken_data.append({
-                    "Target": target,
-                    "Type": damage_type,
-                    "Amount": round(values[0], 1),
-                    "Source": source,
-                    "Hits": values[1],
-                    "Avg. Damage": round(values[4], 1),
-                    "Percentage": f"{values[3]:.1f}%"
-                })
-        
-        # Convert to DataFrame, sort, and display
-        if damage_taken_data:
-            df_taken = pd.DataFrame(damage_taken_data)
-            df_taken = df_taken.sort_values(["Target", "Amount"], ascending=[True, False]).reset_index(drop=True)
-            st.dataframe(df_taken, use_container_width=True)
-
-
-def export_damage_data(damage_data, format_type):
-    """Export damage data in the specified format."""
-    # Create DataFrames for each category using the same format as the display function
-    dataframes = {}
-    
-    # 1. Total Damage Done by Source
-    if damage_data["damage_done"]:
-        source_data = []
-        for source, values in damage_data["damage_done"].items():
-            source_data.append({
+        # Create a DataFrame for PvP damage done
+        pvp_data = []
+        for source, values in damage_data["pvp_damage_done"].items():
+            pvp_data.append({
                 "Source": source,
-                "Amount": values[0],
-                "Percentage": values[2] if len(values) > 2 else 0
+                "Damage": round(values[0], 1),
+                "Hits": values[1],
+                "Average": round(values[3], 1) if len(values) > 3 else 0,
+                "%": f"{values[2]:.1f}%" if len(values) > 2 else "0.0%"
             })
         
-        if source_data:
-            df_source = pd.DataFrame(source_data)
-            df_source = df_source.sort_values("Amount", ascending=False).reset_index(drop=True)
-            dataframes["Total Damage Done by Source"] = df_source
+        # Convert to DataFrame, sort by damage, and display
+        if pvp_data:
+            df_pvp = pd.DataFrame(pvp_data)
+            df_pvp = df_pvp.sort_values("Damage", ascending=False).reset_index(drop=True)
+            
+            # Display with sortable HTML table
+            display_sortable_table(df_pvp, "pvp-damage-done-table")
+        else:
+            st.info("No player vs player damage done detected in this log.")
     
-    # 2. Total Damage Taken by Target
-    if damage_data["damage_taken"]:
-        target_data = []
-        for target, values in damage_data["damage_taken"].items():
-            target_data.append({
+    # 4. PvP Damage Taken (New)
+    if display_options["pvp_damage_taken"] and damage_data["pvp_damage_taken"]:
+        st.subheader("🛡️ PvP Damage Taken")
+        
+        # Create a DataFrame for PvP damage taken
+        pvp_taken_data = []
+        for target, values in damage_data["pvp_damage_taken"].items():
+            pvp_taken_data.append({
                 "Target": target,
-                "Amount": values[0],
-                "Percentage": values[2] if len(values) > 2 else 0
+                "Damage": round(values[0], 1),
+                "Hits": values[1],
+                "Average": round(values[3], 1) if len(values) > 3 else 0,
+                "%": f"{values[2]:.1f}%" if len(values) > 2 else "0.0%"
             })
         
-        if target_data:
-            df_target = pd.DataFrame(target_data)
-            df_target = df_target.sort_values("Amount", ascending=False).reset_index(drop=True)
-            dataframes["Total Damage Taken by Target"] = df_target
+        # Convert to DataFrame, sort by damage, and display
+        if pvp_taken_data:
+            df_pvp_taken = pd.DataFrame(pvp_taken_data)
+            df_pvp_taken = df_pvp_taken.sort_values("Damage", ascending=False).reset_index(drop=True)
+            
+            # Display with sortable HTML table
+            display_sortable_table(df_pvp_taken, "pvp-damage-taken-table")
+        else:
+            st.info("No player vs player damage taken detected in this log.")
     
-    # 3. Total Damage by Attack Type
-    if damage_data["damage_types"]:
-        damage_type_data = []
+    # 5. Damage by Type with Source Filter
+    if display_options["damage_types"] and damage_data["damage_types"]:
+        st.subheader("🔥 Damage by Type")
+
+        damage_type_data_full = []
+        sources = set()
+
         for key, values in damage_data["damage_types"].items():
             parts = key.split(" -> ")
             if len(parts) == 2:
                 source = parts[0]
                 attack_type = parts[1]
-                
-                damage_type_data.append({
+
+                sources.add(source)
+
+                damage_type_data_full.append({
                     "Source": source,
-                    "Attack Type": attack_type,
-                    "Amount": values[0],
+                    "Type": attack_type.title(),  # ← prettify casing
+                    "Damage": round(values[0], 1),
                     "Hits": values[1],
-                    "Avg. Damage": values[3] if len(values) > 3 else values[0]/values[1],
-                    "Percentage": values[2] if len(values) > 2 else 0
+                    "Average": round(values[3], 1) if len(values) > 3 else 0,
+                    "%": f"{values[2]:.1f}%" if len(values) > 2 else "0.0%"
                 })
-        
-        if damage_type_data:
-            df_type = pd.DataFrame(damage_type_data)
-            df_type = df_type.sort_values(["Source", "Amount"], ascending=[True, False]).reset_index(drop=True)
-            dataframes["Total Damage by Attack Type"] = df_type
+
+        # Filters
+        source_list = sorted(list(sources))
+        source_options = ["Filter by Source"] + source_list
+
+        if 'damage_type_source_filter' not in st.session_state:
+            st.session_state.damage_type_source_filter = "Filter by Source"
+
+        selected_source = st.selectbox(
+            "Source Filter",
+            source_options,
+            index=source_options.index(st.session_state.damage_type_source_filter),
+            key="damage_type_source_filter",
+            label_visibility="collapsed"
+        )
+
+        df_type_full = pd.DataFrame(damage_type_data_full)
+        if selected_source != "Filter by Source":
+            df_type = df_type_full[df_type_full["Source"] == selected_source].reset_index(drop=True)
+        else:
+            df_type = df_type_full
+
+        if not df_type.empty:
+            df_type = df_type.sort_values("Damage", ascending=False).reset_index(drop=True)
+            display_sortable_table(df_type, "damage-type-table")
+
+
     
-    # 4. Total Damage Taken by Type
-    if damage_data["damage_details"]:
-        damage_taken_data = []
+    # 6. Damage Details (Source to Target breakdown) with Filters
+    if display_options["damage_details"] and damage_data["damage_details"]:
+        st.subheader("📝 Damage Details")
+
+        damage_details_data = []
+        unique_sources = set()
+        unique_targets = set()
+
         for key, values in damage_data["damage_details"].items():
             parts = key.split(" -> ")
             if len(parts) == 2:
-                source, target = parts
-                damage_type = values[2] if len(values) > 2 else "unknown"
-                
-                damage_taken_data.append({
-                    "Target": target,
-                    "Type": damage_type,
-                    "Amount": values[0],
+                source = parts[0]
+                target = parts[1]
+
+                unique_sources.add(source)
+                unique_targets.add(target)
+
+                damage_details_data.append({
                     "Source": source,
+                    "Target": target,
+                    "Damage": round(values[0], 1),
                     "Hits": values[1],
-                    "Avg. Damage": values[4] if len(values) > 4 else values[0]/values[1],
-                    "Percentage": values[3] if len(values) > 3 else 0
+                    "Average": round(values[4], 1) if len(values) > 4 else 0,
+                    "%": f"{values[3]:.1f}%" if len(values) > 3 else "0.0%"
                 })
-        
-        if damage_taken_data:
-            df_taken = pd.DataFrame(damage_taken_data)
-            df_taken = df_taken.sort_values(["Target", "Amount"], ascending=[True, False]).reset_index(drop=True)
-            dataframes["Total Damage Taken by Type"] = df_taken
+
+    source_list = sorted(list(unique_sources))
+    target_list = sorted(list(unique_targets))
+    source_options = ["Filter by Source"] + source_list
+    target_options = ["Filter by Target"] + target_list
+
+    # 🔐 Ensure persistent filters
+    if 'details_source_filter' not in st.session_state:
+        st.session_state.details_source_filter = "Filter by Source"
+    if 'details_target_filter' not in st.session_state:
+        st.session_state.details_target_filter = "Filter by Target"
+
+    filter_col1, filter_col2 = st.columns(2)
+    with filter_col1:
+        selected_source_details = st.selectbox(
+            "Source Filter",
+            source_options,
+            index=source_options.index(st.session_state.details_source_filter),
+            key="details_source_filter",
+            label_visibility="collapsed"
+        )
+    with filter_col2:
+        selected_target_details = st.selectbox(
+            "Target Filter",
+            target_options,
+            index=target_options.index(st.session_state.details_target_filter),
+            key="details_target_filter",
+            label_visibility="collapsed"
+        )
+
+    # Convert to DataFrame and apply filters
+    df_details_full = pd.DataFrame(damage_details_data)
+
+    if selected_source_details != "Filter by Source" and selected_target_details != "Filter by Target":
+        df_details = df_details_full[
+            (df_details_full["Source"] == selected_source_details) &
+            (df_details_full["Target"] == selected_target_details)
+        ].reset_index(drop=True)
+    elif selected_source_details != "Filter by Source":
+        df_details = df_details_full[df_details_full["Source"] == selected_source_details].reset_index(drop=True)
+    elif selected_target_details != "Filter by Target":
+        df_details = df_details_full[df_details_full["Target"] == selected_target_details].reset_index(drop=True)
+    else:
+        df_details = df_details_full
+
+    if not df_details.empty:
+        df_details = df_details.sort_values("Damage", ascending=False).reset_index(drop=True)
+        display_sortable_table(df_details, "damage-details-table")
+
+
+
+def display_sortable_table(df, table_id):
+    """
+    Display a DataFrame as a nicely styled and sortable HTML table.
     
-    # Export based on format type
-    if format_type == "CSV":
-        # Combine all DataFrames with headers
-        buffer = io.StringIO()
-        for name, df in dataframes.items():
-            buffer.write(f"--- {name} ---\n")
-            df.to_csv(buffer, index=False)
-            buffer.write("\n\n")
-        return buffer.getvalue()
+    Args:
+        df: The DataFrame to display
+        table_id: A unique ID for the table
+    """
+    # Calculate dynamic height based on number of rows (with a maximum)
+    row_height = 40  # Estimate of pixels per row
+    header_height = 60  # Estimated header height
+    min_height = 200  # Minimum height of table
+    max_height = 550  # Maximum height of table
+    
+    # Calculate height based on content, within the min/max bounds
+    table_height = max(min_height, min(len(df) * row_height + header_height, max_height))
+    
+    # Generate and display HTML table
+    html_table = generate_sortable_table(df, table_height, table_id)
+    st.markdown(html_table, unsafe_allow_html=True)
+
+
+def generate_sortable_table(df, height_px, table_id):
+    """
+    Generate a sortable HTML table with styling.
+    
+    Args:
+        df: DataFrame containing the data to display
+        height_px: Height of the table in pixels
+        table_id: A unique ID for the table
+    
+    Returns:
+        HTML string with the styled and sortable table
+    """
+    # Start with table styling
+    html = f"""
+    <style>
+        .{table_id} {{
+            width: 100%;
+            border-collapse: collapse;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+        }}
+        .{table_id} thead {{
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }}
+        .{table_id} th {{
+            background-color: #f2f2f6;
+            color: #262730;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px 8px;
+            border: 1px solid #e1e4e8;
+            cursor: pointer;
+        }}
+        .{table_id} th:hover {{
+            background-color: #e0e0e6;
+        }}
+        .{table_id} th.asc:after {{
+            content: " ▲";
+        }}
+        .{table_id} th.desc:after {{
+            content: " ▼";
+        }}
+        .{table_id} td {{
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #e1e4e8;
+            background-color: white;
+        }}
+        .{table_id} tr:hover {{
+            background-color: #f0f2f6;
+        }}
+        .{table_id} tr:hover td {{
+            background-color: #f0f2f6;
+        }}
+        /* Column width adjustments */
+        .{table_id} th:nth-child(1), .{table_id} td:nth-child(1) {{ /* First column (Source/Target) */
+            min-width: 120px;
+            text-align: left;
+        }}
+        .{table_id} td:nth-child(1) {{
+            text-align: left;
+        }}
+        .{table_id} th:nth-child(2), .{table_id} td:nth-child(2) {{ /* Second column (Type/Damage) */
+            min-width: 100px;
+        }}
+        .{table_id} th:nth-child(n+3), .{table_id} td:nth-child(n+3) {{ /* Numerical values */
+            min-width: 65px;
+        }}
+    </style>
+    <div style="height: {height_px}px; overflow-y: auto; margin-bottom: 20px;">
+    <table class="{table_id}" id="{table_id}">
+        <thead>
+            <tr>
+    """
+    
+    # Add headers with sorting functionality
+    col_types = []  # To track column data types (text vs. number)
+    for i, col in enumerate(df.columns):
+        # Determine if column is numeric or text for proper sorting
+        if col in ["Damage", "Hits", "Average"]:
+            col_type = "number"
+        elif col == "%":
+            # Special case for percentage column - we'll parse it as numeric
+            col_type = "percent"
+        else:
+            col_type = "text"
+        col_types.append(col_type)
         
-    elif format_type == "Excel":
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            for name, df in dataframes.items():
-                sheet_name = name[:31]  # Excel limits sheet names to 31 chars
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-        buffer.seek(0)
-        return buffer.getvalue()
-        
-    else:  # Text format
-        buffer = io.StringIO()
-        for name, df in dataframes.items():
-            buffer.write(f"{'=' * 30} {name.upper()} {'=' * 30}\n")
+        html += f'<th data-col="{i}" data-type="{col_type}">{col}</th>'
+    
+    html += """
+            </tr>
+        </thead>
+        <tbody>
+    """
+    
+    # Add data rows
+    for _, row in df.iterrows():
+        html += "<tr>"
+        for i, col in enumerate(df.columns):
+            # Left-align the first column, center-align the rest
+            alignment = "text-align: left;" if i == 0 else ""
+            html += f"<td style='{alignment}'>{row[col]}</td>"
+        html += "</tr>"
+    
+    html += """
+        </tbody>
+    </table>
+    </div>
+    <script>
+        // Add sorting functionality to the table
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.getElementById('""" + table_id + """');
+            const headers = table.querySelectorAll('th');
             
-            # Format based on which table we're displaying
-            if "Attack Type" in name:
-                buffer.write("%-20s %-15s %12s %5s %8s %5s\n" % 
-                           ("SOURCE", "ATTACK TYPE", "AMOUNT", "HITS", "AVG.DMG", "PERC"))
-                buffer.write("-" * 100 + "\n")
-                
-                for _, row in df.iterrows():
-                    buffer.write("%-20s %-15s %12.1f %5d %8.1f %5.1f%%\n" % (
-                        str(row["Source"])[:20],
-                        str(row["Attack Type"])[:15],
-                        row["Amount"],
-                        row["Hits"],
-                        row["Avg. Damage"],
-                        row["Percentage"] if isinstance(row["Percentage"], (int, float)) else 
-                            float(str(row["Percentage"]).rstrip("%"))
-                    ))
-            elif "Taken by Type" in name:
-                buffer.write("%-20s %-15s %12s %-20s %5s %8s %5s\n" % 
-                           ("TARGET", "TYPE", "AMOUNT", "SOURCE", "HITS", "AVG.DMG", "PERC"))
-                buffer.write("-" * 100 + "\n")
-                
-                for _, row in df.iterrows():
-                    buffer.write("%-20s %-15s %12.1f %-20s %5d %8.1f %5.1f%%\n" % (
-                        str(row["Target"])[:20],
-                        str(row["Type"])[:15],
-                        row["Amount"],
-                        str(row["Source"])[:20],
-                        row["Hits"],
-                        row["Avg. Damage"],
-                        row["Percentage"] if isinstance(row["Percentage"], (int, float)) else 
-                            float(str(row["Percentage"]).rstrip("%"))
-                    ))
-            else:
-                # Source or Target summary reports
-                column = "Source" if "Done by Source" in name else "Target"
-                buffer.write("%-30s %12s %5s\n" % 
-                           (column.upper(), "AMOUNT", "PERC"))
-                buffer.write("-" * 50 + "\n")
-                
-                for _, row in df.iterrows():
-                    buffer.write("%-30s %12.1f %5.1f%%\n" % (
-                        str(row[column])[:30],
-                        row["Amount"],
-                        row["Percentage"] if isinstance(row["Percentage"], (int, float)) else 
-                            float(str(row["Percentage"]).rstrip("%"))
-                    ))
-            
-            buffer.write("\n\n")
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const colIndex = parseInt(header.dataset.col);
+                    const colType = header.dataset.type;
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    
+                    // Determine sort direction
+                    const isAscending = header.classList.contains('desc') || !header.classList.contains('asc');
+                    
+                    // Reset all headers
+                    headers.forEach(h => {
+                        h.classList.remove('asc', 'desc');
+                    });
+                    
+                    // Set new sort direction
+                    header.classList.add(isAscending ? 'asc' : 'desc');
+                    
+                    // Sort the rows
+                    rows.sort((rowA, rowB) => {
+                        const cellA = rowA.querySelectorAll('td')[colIndex].textContent.trim();
+                        const cellB = rowB.querySelectorAll('td')[colIndex].textContent.trim();
+                        
+                        let valueA, valueB;
+                        
+                        if (colType === 'number') {
+                            // Parse as numbers
+                            valueA = parseFloat(cellA) || 0;
+                            valueB = parseFloat(cellB) || 0;
+                        } else if (colType === 'percent') {
+                            // Parse percentages by removing % and converting to number
+                            valueA = parseFloat(cellA.replace('%', '')) || 0;
+                            valueB = parseFloat(cellB.replace('%', '')) || 0;
+                        } else {
+                            // Case-insensitive string comparison
+                            valueA = cellA.toLowerCase();
+                            valueB = cellB.toLowerCase();
+                        }
+                        
+                        if (valueA < valueB) {
+                            return isAscending ? -1 : 1;
+                        }
+                        if (valueA > valueB) {
+                            return isAscending ? 1 : -1;
+                        }
+                        return 0;
+                    });
+                    
+                    // Reorder the rows
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        });
+    </script>
+    """
+    return html
+
+
+def export_damage_data(damage_data, export_format, display_options, player_name=""):
+    """
+    Format the damage data for export based on the selected format.
+    
+    Args:
+        damage_data: Dictionary containing damage calculation results
+        export_format: String indicating the desired export format
+        display_options: Dictionary of display preferences
+        player_name: Optional player name to include in exports
+    
+    Returns:
+        Formatted data string in the requested format
+    """
+    if not damage_data:
+        return ""
+    
+    # Create output based on the format
+    if export_format.lower() == "csv":
+        output = []
         
-        return buffer.getvalue()
+        # Add header with player name
+        if player_name:
+            output.append(f"# Damage Report for {player_name}")
+            output.append("")
+        
+        # Damage Done section
+        if display_options.get("damage_done", True) and damage_data["damage_done"]:
+            output.append("DAMAGE DONE BY SOURCE")
+            output.append("Source,Damage,Hits,Average,%")
+            
+            # Sort entries by damage
+            sorted_sources = sorted(damage_data["damage_done"].items(), 
+                                   key=lambda x: x[1][0], 
+                                   reverse=True)
+            
+            for source, values in sorted_sources:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"{source},{round(values[0], 1)},{values[1]},{round(average, 1)},{percentage:.1f}%")
+            
+            output.append("")
+        
+        # Damage Taken section
+        if display_options.get("damage_taken", True) and damage_data["damage_taken"]:
+            output.append("DAMAGE TAKEN BY TARGET")
+            output.append("Target,Damage,Hits,Average,%")
+            
+            # Sort entries by damage
+            sorted_targets = sorted(damage_data["damage_taken"].items(), 
+                                   key=lambda x: x[1][0], 
+                                   reverse=True)
+            
+            for target, values in sorted_targets:
+                # Get the percentage if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"{target},{round(values[0], 1)},{values[1]},{round(average, 1)},{percentage:.1f}%")
+            
+            output.append("")
+        
+        # PvP Damage Done section
+        if display_options.get("pvp_damage_done", True) and damage_data["pvp_damage_done"]:
+            output.append("PVP DAMAGE DONE")
+            output.append("Source,Damage,Hits,Average,%")
+            
+            # Sort entries by damage
+            sorted_pvp = sorted(damage_data["pvp_damage_done"].items(), 
+                               key=lambda x: x[1][0], 
+                               reverse=True)
+            
+            for source, values in sorted_pvp:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"{source},{round(values[0], 1)},{values[1]},{round(average, 1)},{percentage:.1f}%")
+            
+            output.append("")
+            
+        # PvP Damage Taken section
+        if display_options.get("pvp_damage_taken", True) and damage_data["pvp_damage_taken"]:
+            output.append("PVP DAMAGE TAKEN")
+            output.append("Target,Damage,Hits,Average,%")
+            
+            # Sort entries by damage
+            sorted_pvp_taken = sorted(damage_data["pvp_damage_taken"].items(), 
+                                     key=lambda x: x[1][0], 
+                                     reverse=True)
+            
+            for target, values in sorted_pvp_taken:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"{target},{round(values[0], 1)},{values[1]},{round(average, 1)},{percentage:.1f}%")
+            
+            output.append("")
+        
+        # Damage by Type section
+        if display_options.get("damage_types", True) and damage_data["damage_types"]:
+            output.append("DAMAGE BY TYPE")
+            output.append("Source,Type,Damage,Hits,Average,%")
+            
+            # Process data for sorting
+            type_data = []
+            for key, values in damage_data["damage_types"].items():
+                parts = key.split(" -> ")
+                if len(parts) == 2:
+                    source = parts[0]
+                    attack_type = parts[1]
+                    
+                    # Get the percentage and average if available
+                    percentage = values[2] if len(values) > 2 else 0
+                    average = values[3] if len(values) > 3 else 0
+                    
+                    type_data.append((source, attack_type, values[0], values[1], average, percentage))
+            
+            # Sort by damage
+            sorted_types = sorted(type_data, key=lambda x: x[2], reverse=True)
+            
+            for source, attack_type, damage, hits, average, percentage in sorted_types:
+                output.append(f"{source},{attack_type},{round(damage, 1)},{hits},{round(average, 1)},{percentage:.1f}%")
+            
+            output.append("")
+        
+        # Damage Details section
+        if display_options.get("damage_details", True) and damage_data["damage_details"]:
+            output.append("DAMAGE DETAILS")
+            output.append("Source,Target,Damage,Hits,Average,%")
+            
+            # Process data for sorting
+            detail_data = []
+            for key, values in damage_data["damage_details"].items():
+                parts = key.split(" -> ")
+                if len(parts) == 2:
+                    source = parts[0]
+                    target = parts[1]
+                    
+                    # Get the percentage and average if available
+                    percentage = values[3] if len(values) > 3 else 0
+                    average = values[4] if len(values) > 4 else 0
+                    
+                    detail_data.append((source, target, values[0], values[1], average, percentage))
+            
+            # Sort by damage
+            sorted_details = sorted(detail_data, key=lambda x: x[2], reverse=True)
+            
+            for source, target, damage, hits, average, percentage in sorted_details:
+                output.append(f"{source},{target},{round(damage, 1)},{hits},{round(average, 1)},{percentage:.1f}%")
+        
+        return "\n".join(output)
+    
+    elif export_format.lower() == "excel":
+        # For Excel format, we'll just return the CSV format since that can be easily opened in Excel
+        return export_damage_data(damage_data, "csv", display_options, player_name)
+    
+    elif export_format.lower() == "markdown":
+        output = []
+        
+        # Add header with player name
+        if player_name:
+            output.append(f"# Damage Report for {player_name}")
+            output.append("")
+        
+        # Damage Done section
+        if display_options.get("damage_done", True) and damage_data["damage_done"]:
+            output.append("## DAMAGE DONE BY SOURCE")
+            output.append("| Source | Damage | Hits | Average | % |")
+            output.append("|--------|-------:|-----:|--------:|--:|")
+            
+            # Sort entries by damage
+            sorted_sources = sorted(damage_data["damage_done"].items(), 
+                                   key=lambda x: x[1][0], 
+                                   reverse=True)
+            
+            for source, values in sorted_sources:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"| {source} | {round(values[0], 1)} | {values[1]} | {round(average, 1)} | {percentage:.1f}% |")
+            
+            output.append("")
+        
+        # Damage Taken section
+        if display_options.get("damage_taken", True) and damage_data["damage_taken"]:
+            output.append("## DAMAGE TAKEN BY TARGET")
+            output.append("| Target | Damage | Hits | Average | % |")
+            output.append("|--------|-------:|-----:|--------:|--:|")
+            
+            # Sort entries by damage
+            sorted_targets = sorted(damage_data["damage_taken"].items(), 
+                                   key=lambda x: x[1][0], 
+                                   reverse=True)
+            
+            for target, values in sorted_targets:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"| {target} | {round(values[0], 1)} | {values[1]} | {round(average, 1)} | {percentage:.1f}% |")
+            
+            output.append("")
+        
+        # PvP Damage Done section
+        if display_options.get("pvp_damage_done", True) and damage_data["pvp_damage_done"]:
+            output.append("## PVP DAMAGE DONE")
+            output.append("| Source | Damage | Hits | Average | % |")
+            output.append("|--------|-------:|-----:|--------:|--:|")
+            
+            # Sort entries by damage
+            sorted_pvp = sorted(damage_data["pvp_damage_done"].items(), 
+                               key=lambda x: x[1][0], 
+                               reverse=True)
+            
+            for source, values in sorted_pvp:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"| {source} | {round(values[0], 1)} | {values[1]} | {round(average, 1)} | {percentage:.1f}% |")
+            
+            output.append("")
+            
+        # PvP Damage Taken section
+        if display_options.get("pvp_damage_taken", True) and damage_data["pvp_damage_taken"]:
+            output.append("## PVP DAMAGE TAKEN")
+            output.append("| Target | Damage | Hits | Average | % |")
+            output.append("|--------|-------:|-----:|--------:|--:|")
+            
+            # Sort entries by damage
+            sorted_pvp_taken = sorted(damage_data["pvp_damage_taken"].items(), 
+                                     key=lambda x: x[1][0], 
+                                     reverse=True)
+            
+            for target, values in sorted_pvp_taken:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                output.append(f"| {target} | {round(values[0], 1)} | {values[1]} | {round(average, 1)} | {percentage:.1f}% |")
+            
+            output.append("")
+        
+        # Damage by Type section
+        if display_options.get("damage_types", True) and damage_data["damage_types"]:
+            output.append("## DAMAGE BY TYPE")
+            output.append("| Source | Type | Damage | Hits | Average | % |")
+            output.append("|--------|------|-------:|-----:|--------:|--:|")
+            
+            # Process data for sorting
+            type_data = []
+            for key, values in damage_data["damage_types"].items():
+                parts = key.split(" -> ")
+                if len(parts) == 2:
+                    source = parts[0]
+                    attack_type = parts[1]
+                    
+                    # Get the percentage and average if available
+                    percentage = values[2] if len(values) > 2 else 0
+                    average = values[3] if len(values) > 3 else 0
+                    
+                    type_data.append((source, attack_type, values[0], values[1], average, percentage))
+            
+            # Sort by damage
+            sorted_types = sorted(type_data, key=lambda x: x[2], reverse=True)
+            
+            for source, attack_type, damage, hits, average, percentage in sorted_types:
+                output.append(f"| {source} | {attack_type} | {round(damage, 1)} | {hits} | {round(average, 1)} | {percentage:.1f}% |")
+            
+            output.append("")
+        
+        # Damage Details section
+        if display_options.get("damage_details", True) and damage_data["damage_details"]:
+            output.append("## DAMAGE DETAILS")
+            output.append("| Source | Target | Damage | Hits | Average | % |")
+            output.append("|--------|--------|-------:|-----:|--------:|--:|")
+            
+            # Process data for sorting
+            detail_data = []
+            for key, values in damage_data["damage_details"].items():
+                parts = key.split(" -> ")
+                if len(parts) == 2:
+                    source = parts[0]
+                    target = parts[1]
+                    
+                    # Get the percentage and average if available
+                    percentage = values[3] if len(values) > 3 else 0
+                    average = values[4] if len(values) > 4 else 0
+                    
+                    detail_data.append((source, target, values[0], values[1], average, percentage))
+            
+            # Sort by damage
+            sorted_details = sorted(detail_data, key=lambda x: x[2], reverse=True)
+            
+            for source, target, damage, hits, average, percentage in sorted_details:
+                output.append(f"| {source} | {target} | {round(damage, 1)} | {hits} | {round(average, 1)} | {percentage:.1f}% |")
+        
+        return "\n".join(output)
+    
+    else:  # Plain text format
+        output = []
+        
+        # Add header with player name
+        if player_name:
+            output.append(f"Damage Report for {player_name}")
+            output.append("=" * len(output[0]))
+            output.append("")
+        
+        # Damage Done section
+        if display_options.get("damage_done", True) and damage_data["damage_done"]:
+            output.append("DAMAGE DONE BY SOURCE")
+            output.append("-" * 60)
+            
+            # Create headers with proper spacing
+            headers = ["Source", "Damage", "Hits", "Average", "%"]
+            col_widths = [20, 10, 6, 10, 8]
+            
+            header_line = " ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
+            output.append(header_line)
+            output.append("-" * 60)
+            
+            # Sort entries by damage
+            sorted_sources = sorted(damage_data["damage_done"].items(), 
+                                   key=lambda x: x[1][0], 
+                                   reverse=True)
+            
+            for source, values in sorted_sources:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                cols = [
+                    source[:col_widths[0]-1].ljust(col_widths[0]),
+                    str(round(values[0], 1)).ljust(col_widths[1]),
+                    str(values[1]).ljust(col_widths[2]),
+                    str(round(average, 1)).ljust(col_widths[3]),
+                    f"{percentage:.1f}%".ljust(col_widths[4])
+                ]
+                
+                output.append(" ".join(cols))
+            
+            output.append("")
+        
+        # Damage Taken section
+        if display_options.get("damage_taken", True) and damage_data["damage_taken"]:
+            output.append("DAMAGE TAKEN BY TARGET")
+            output.append("-" * 60)
+            
+            # Create headers with proper spacing
+            headers = ["Target", "Damage", "Hits", "Average", "%"]
+            col_widths = [20, 10, 6, 10, 8]
+            
+            header_line = " ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
+            output.append(header_line)
+            output.append("-" * 60)
+            
+            # Sort entries by damage
+            sorted_targets = sorted(damage_data["damage_taken"].items(), 
+                                   key=lambda x: x[1][0], 
+                                   reverse=True)
+            
+            for target, values in sorted_targets:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                cols = [
+                    target[:col_widths[0]-1].ljust(col_widths[0]),
+                    str(round(values[0], 1)).ljust(col_widths[1]),
+                    str(values[1]).ljust(col_widths[2]),
+                    str(round(average, 1)).ljust(col_widths[3]),
+                    f"{percentage:.1f}%".ljust(col_widths[4])
+                ]
+                
+                output.append(" ".join(cols))
+            
+            output.append("")
+        
+        # PvP Damage Done section
+        if display_options.get("pvp_damage_done", True) and damage_data["pvp_damage_done"]:
+            output.append("PVP DAMAGE DONE")
+            output.append("-" * 60)
+            
+            # Create headers with proper spacing
+            headers = ["Source", "Damage", "Hits", "Average", "%"]
+            col_widths = [20, 10, 6, 10, 8]
+            
+            header_line = " ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
+            output.append(header_line)
+            output.append("-" * 60)
+            
+            # Sort entries by damage
+            sorted_pvp = sorted(damage_data["pvp_damage_done"].items(), 
+                               key=lambda x: x[1][0], 
+                               reverse=True)
+            
+            for source, values in sorted_pvp:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                cols = [
+                    source[:col_widths[0]-1].ljust(col_widths[0]),
+                    str(round(values[0], 1)).ljust(col_widths[1]),
+                    str(values[1]).ljust(col_widths[2]),
+                    str(round(average, 1)).ljust(col_widths[3]),
+                    f"{percentage:.1f}%".ljust(col_widths[4])
+                ]
+                
+                output.append(" ".join(cols))
+            
+            output.append("")
+            
+        # PvP Damage Taken section
+        if display_options.get("pvp_damage_taken", True) and damage_data["pvp_damage_taken"]:
+            output.append("PVP DAMAGE TAKEN")
+            output.append("-" * 60)
+            
+            # Create headers with proper spacing
+            headers = ["Target", "Damage", "Hits", "Average", "%"]
+            col_widths = [20, 10, 6, 10, 8]
+            
+            header_line = " ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
+            output.append(header_line)
+            output.append("-" * 60)
+            
+            # Sort entries by damage
+            sorted_pvp_taken = sorted(damage_data["pvp_damage_taken"].items(), 
+                                     key=lambda x: x[1][0], 
+                                     reverse=True)
+            
+            for target, values in sorted_pvp_taken:
+                # Get the percentage and average if available
+                percentage = values[2] if len(values) > 2 else 0
+                average = values[3] if len(values) > 3 else 0
+                
+                cols = [
+                    target[:col_widths[0]-1].ljust(col_widths[0]),
+                    str(round(values[0], 1)).ljust(col_widths[1]),
+                    str(values[1]).ljust(col_widths[2]),
+                    str(round(average, 1)).ljust(col_widths[3]),
+                    f"{percentage:.1f}%".ljust(col_widths[4])
+                ]
+                
+                output.append(" ".join(cols))
+            
+            output.append("")
+        
+        # Damage by Type section
+        if display_options.get("damage_types", True) and damage_data["damage_types"]:
+            output.append("DAMAGE BY TYPE")
+            output.append("-" * 70)
+            
+            # Create headers with proper spacing
+            headers = ["Source", "Type", "Damage", "Hits", "Average", "%"]
+            col_widths = [20, 15, 10, 6, 10, 8]
+            
+            header_line = " ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
+            output.append(header_line)
+            output.append("-" * 70)
+            
+            # Process data for sorting
+            type_data = []
+            for key, values in damage_data["damage_types"].items():
+                parts = key.split(" -> ")
+                if len(parts) == 2:
+                    source = parts[0]
+                    attack_type = parts[1]
+                    
+                    # Get the percentage and average if available
+                    percentage = values[2] if len(values) > 2 else 0
+                    average = values[3] if len(values) > 3 else 0
+                    
+                    type_data.append((source, attack_type, values[0], values[1], average, percentage))
+            
+            # Sort by damage
+            sorted_types = sorted(type_data, key=lambda x: x[2], reverse=True)
+            
+            for source, attack_type, damage, hits, average, percentage in sorted_types:
+                cols = [
+                    source[:col_widths[0]-1].ljust(col_widths[0]),
+                    attack_type[:col_widths[1]-1].ljust(col_widths[1]),
+                    str(round(damage, 1)).ljust(col_widths[2]),
+                    str(hits).ljust(col_widths[3]),
+                    str(round(average, 1)).ljust(col_widths[4]),
+                    f"{percentage:.1f}%".ljust(col_widths[5])
+                ]
+                
+                output.append(" ".join(cols))
+            
+            output.append("")
+        
+        # Damage Details section
+        if display_options.get("damage_details", True) and damage_data["damage_details"]:
+            output.append("DAMAGE DETAILS")
+            output.append("-" * 70)
+            
+            # Create headers with proper spacing
+            headers = ["Source", "Target", "Damage", "Hits", "Average", "%"]
+            col_widths = [20, 20, 10, 6, 10, 8]
+            
+            header_line = " ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
+            output.append(header_line)
+            output.append("-" * 70)
+            
+            # Process data for sorting
+            detail_data = []
+            for key, values in damage_data["damage_details"].items():
+                parts = key.split(" -> ")
+                if len(parts) == 2:
+                    source = parts[0]
+                    target = parts[1]
+                    
+                    # Get the percentage and average if available
+                    percentage = values[3] if len(values) > 3 else 0
+                    average = values[4] if len(values) > 4 else 0
+                    
+                    detail_data.append((source, target, values[0], values[1], average, percentage))
+            
+            # Sort by damage
+            sorted_details = sorted(detail_data, key=lambda x: x[2], reverse=True)
+            
+            for source, target, damage, hits, average, percentage in sorted_details:
+                cols = [
+                    source[:col_widths[0]-1].ljust(col_widths[0]),
+                    target[:col_widths[1]-1].ljust(col_widths[1]),
+                    str(round(damage, 1)).ljust(col_widths[2]),
+                    str(hits).ljust(col_widths[3]),
+                    str(round(average, 1)).ljust(col_widths[4]),
+                    f"{percentage:.1f}%".ljust(col_widths[5])
+                ]
+                
+                output.append(" ".join(cols))
+        
+        return "\n".join(output)
