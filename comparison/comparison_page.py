@@ -2,6 +2,11 @@ import streamlit as st
 import pandas as pd
 from shared.supabase_client import supabase
 import streamlit.components.v1 as components
+import re
+import uuid
+
+def sanitize_key(name):
+    return re.sub(r'\W+', '_', name).lower()
 
 # Abbreviation Maps
 CLASS_ABBR = {
@@ -34,57 +39,183 @@ RACE_ABBR = {
     "Lagodae": "Lagoda", "Lepori": "Lepori"
 }
 
-def format_copy_text_full(df):
-    headers = ["Race", "Class", "STR", "INT", "WIS", "DEX", "CON", "Boost", "S+D", "S+D+I"]
-    lines = []
-    header_line = "{:<12} {:<10}   {:<4} {:<4} {:<4} {:<4} {:<4}   {:<5}   {:<6} {:<6}".format(*headers)
-    lines.append(header_line)
-    for _, row in df.iterrows():
-        race = RACE_ABBR.get(row["Race"], row["Race"])
-        clas = CLASS_ABBR.get(row["Class"], row["Class"])
-        boost = str(row["Boost"])
-        stats = {
-            "STR": str(row["STR"]), "INT": str(row["INT"]), "WIS": str(row["WIS"]),
-            "DEX": str(row["DEX"]), "CON": str(row["CON"]), "S+D": str(row["S+D"]),
-            "S+D+I": str(row["S+D+I"])
-        }
-        line = "{:<12} {:<10}   {:<4} {:<4} {:<4} {:<4} {:<4}   {:<5}   {:<6} {:<6}".format(
-            race, clas, stats["STR"], stats["INT"], stats["WIS"], stats["DEX"], stats["CON"],
-            boost, stats["S+D"], stats["S+D+I"]
-        )
-        lines.append(line)
-    return "```text\n" + "\n".join(lines) + "\n```"
+# Replace your current format_copy_text_compact function with this one:
 
-def format_copy_text_mobile(df):
-    headers = ["Race", "Cls", "S", "I", "W", "D", "C", "Bst", "SD", "SDI"]
+def format_copy_text_compact(df, filter_summary=None, sort_by=None):
     lines = []
-    header_line = "{:<6} {:<4}   {:<2} {:<2} {:<2} {:<2} {:<2}   {:<4}   {:<3} {:<4}".format(*headers)
+    
+    # Ultra-compact race abbreviations (3 chars)
+    RACE_TINY_ABBR = {
+        "Human": "Hum", "Goblin": "Gob", "Deep gnome": "DGn", "Shalonesti elf": "ShE",
+        "Half elf": "HEl", "Dark elf": "DEl", "Wild elf": "W-E", "Hill dwarf": "HDw",
+        "Mountain dwarf": "MDw", "Kender": "Ken", "Ogre": "Ogr", "Giant ogre": "GOg",
+        "Half ogre": "HOg", "Minotaur": "Min", "Yinn": "Yin", "Dark dwarf": "DDw",
+        "Tinker gnome": "TGn", "Sea elf": "SeE", "Black dragon": "Blk", "Blue dragon": "Blu",
+        "Green dragon": "Grn", "Red dragon": "Red", "White dragon": "Wht", "Brass dragon": "Brs",
+        "Bronze dragon": "Brz", "Copper dragon": "Cop", "Gold dragon": "Gld", "Silver dragon": "Slv",
+        "Demon": "Dem", "Angel": "Ang", "Aurak draconian": "Aur", "Baaz draconian": "Baz",
+        "Bozak draconian": "Boz", "Balanx": "Blx", "Felar": "Fel", "Wemic": "Wem",
+        "Cloud giant": "ClG", "Frost giant": "FrG", "Fire giant": "FiG", "Bugbear": "Bug",
+        "Hobgoblin": "Hob", "Mul": "Mul", "Gully dwarf": "GDw", "Centaur": "Cen", "Ariel": "Ari",
+        "Pixie": "Pix", "Bakali": "Bak", "Brown dragon": "Brn", "Steel dragon": "Stl",
+        "Troll": "Trl", "Orc": "Orc", "Arboren": "Arb", "Crystal dragon": "Cry",
+        "Lagodae": "Lag", "Lepori": "Lep"
+    }
+    
+    # Create a header line with proper spacing - using a monospace string format
+    header_line = f"{'Rac':<4}{'Cls':<5}{'S':<3}{'I':<3}{'W':<3}{'D':<3}{'C':<3}{'Bo':<4}{'SD':<5}{'SDI'}"
+
     lines.append(header_line)
+    
+    # Process each row with proper column alignment
     for _, row in df.iterrows():
-        race = RACE_ABBR.get(row["Race"], row["Race"])
-        clas = CLASS_ABBR.get(row["Class"], row["Class"])
+        race = RACE_TINY_ABBR.get(row["Race"], row["Race"][:3])  # Use tiny abbr or first 3 chars
+        clas = CLASS_ABBR.get(row["Class"], row["Class"][:3])[:3]  # Use class abbr or first 3 chars, limit to 3
         boost = str(row["Boost"])
         stats = {
             "S": str(row["STR"]), "I": str(row["INT"]), "W": str(row["WIS"]),
             "D": str(row["DEX"]), "C": str(row["CON"]), "SD": str(row["S+D"]),
             "SDI": str(row["S+D+I"])
         }
-        line = "{:<6} {:<4}   {:<2} {:<2} {:<2} {:<2} {:<2}   {:<4}   {:<3} {:<4}".format(
-            race, clas, stats["S"], stats["I"], stats["W"], stats["D"], stats["C"],
-            boost, stats["SD"], stats["SDI"]
-        )
+        
+        # Format each column with fixed width to ensure alignment
+        # Format: each value has fixed width with spaces after
+        line = f"{race:<4}{clas:<5}{stats['S']:<3}{stats['I']:<3}{stats['W']:<3}{stats['D']:<3}{stats['C']:<3}{boost:<4}{stats['SD']:<5}{stats['SDI']}"
         lines.append(line)
+    
+    # Add a blank line after the table
+    lines.append("")
+    
+    # Add filter summary at the end if provided
+    if filter_summary and sort_by:
+        lines.append("Applied Filters:")
+        
+        # Format races
+        race_filter = next((f for f in filter_summary if f.startswith("Race:")), None)
+        if race_filter:
+            race_text = race_filter.replace("Race: ", "").strip()
+            if race_text.endswith("races"):
+                count = race_text.split()[0]
+                race_list_raw = [r.strip() for r in race_text.replace(f"{count} races", "").strip().split(",") if r.strip()]
+                # Convert full race names to abbreviations in the list
+                race_list = []
+                for race_name in race_list_raw:
+                    abbr = RACE_ABBR.get(race_name, race_name)
+                    tiny_abbr = RACE_TINY_ABBR.get(race_name, race_name[:3])
+                    if abbr != race_name:  # If there's an abbreviation
+                        race_list.append(f"{race_name} ({tiny_abbr})")
+                    else:
+                        race_list.append(race_name)
+                
+                if race_list:  # If there's a list after the count
+                    lines.append(f"{count} Races: {', '.join(race_list)}")
+                else:
+                    lines.append(f"{count} Races")
+            else:
+                # For individual races, also add abbreviations
+                race_items = [r.strip() for r in race_text.split(",") if r.strip()]
+                race_list = []
+                for race_name in race_items:
+                    abbr = RACE_ABBR.get(race_name, race_name)
+                    tiny_abbr = RACE_TINY_ABBR.get(race_name, race_name[:3])
+                    if abbr != race_name:  # If there's an abbreviation
+                        race_list.append(f"{race_name} ({tiny_abbr})")
+                    else:
+                        race_list.append(race_name)
+                lines.append(f"Races: {', '.join(race_list)}")
+                
+        # Format classes
+        class_filter = next((f for f in filter_summary if f.startswith("Class:")), None)
+        if class_filter:
+            class_text = class_filter.replace("Class: ", "").strip()
+            if class_text.endswith("classes"):
+                count = class_text.split()[0]
+                class_list = class_text.replace(f"{count} classes", "").strip()
+                if class_list:  # If there's a list after the count
+                    lines.append(f"{count} Classes: {class_list}")
+                else:
+                    lines.append(f"{count} Classes")
+            else:
+                lines.append(f"Classes: {class_text}")
+                
+        # Format boosts
+        boost_filter = next((f for f in filter_summary if f.startswith("Boost:")), None)
+        if boost_filter:
+            boost_text = boost_filter.replace("Boost: ", "Boosts: ").strip()
+            lines.append(boost_text)
+            
+        # Format stat minimums
+        stat_filter = next((f for f in filter_summary if f.startswith("Min Stats:")), None)
+        if stat_filter:
+            # Replace the ≥ symbols with "over"
+            stat_parts = stat_filter.replace("Min Stats: ", "").strip().split(", ")
+            formatted_parts = []
+            for part in stat_parts:
+                stat_name, value = part.split(": ≥")
+                formatted_parts.append(f"{stat_name} over {value}")
+            
+            lines.append(f"Min: {', '.join(formatted_parts)}")
+            
+        # Add sort info
+        lines.append(f"Sorted by: {sort_by}")
+    
     return "```text\n" + "\n".join(lines) + "\n```"
 
-
-
 def show_comparison_page():
-    @st.cache_data(ttl=60)
+    @st.cache_data(ttl=300)  # Cache for 5 minutes
     def load_combos():
-        response = supabase.table("raceclass").select("*").execute()
-        return pd.DataFrame(response.data)
+        """
+        Load all race/class combinations from Supabase using pagination to ensure ALL records are fetched.
+        """
+        # Initialize an empty list to store all data
+        all_data = []
+        
+        # Set pagination parameters
+        page_size = 1000  # Fetch 1000 records at a time
+        current_page = 0
+        more_data = True
+        
+        # Show a progress indicator during initial load
+        with st.spinner("Loading data from database..."):
+            # Use pagination to fetch all records
+            while more_data:
+                # Calculate offset for pagination
+                offset = current_page * page_size
+                
+                # Fetch data with pagination
+                response = supabase.table("raceclass").select("*").range(offset, offset + page_size - 1).execute()
+                
+                # Get the data from the response
+                page_data = response.data
+                
+                # If no data was returned, we've reached the end
+                if not page_data:
+                    more_data = False
+                    break
+                    
+                # Add the data to our list
+                all_data.extend(page_data)
+                
+                # Increment the page counter
+                current_page += 1
+                
+                # Break if we got fewer records than the page size (we've reached the end)
+                if len(page_data) < page_size:
+                    more_data = False
+        
+        # Create a DataFrame from all the data
+        df = pd.DataFrame(all_data)
+        
+        # Return the DataFrame
+        return df
 
+    # Load the data
     df = load_combos()
+    
+    # Display loading stats
+    st.write(f"✅ Loaded {len(df)} rows")
+    
+    df["Boost"] = df["Boost"].replace("NO", "N/A")
     if df.empty:
         st.warning("No race/class data found.")
         return
@@ -125,10 +256,13 @@ def show_comparison_page():
             elif not select_all_races and all_races_selected:
                 st.session_state.selected_races = []
                 st.rerun()
+            
+            # Replace the race_selections block with this:
             race_selections = {
-                race: st.checkbox(race, value=(race in st.session_state.selected_races), key=f"race_{race}")
+                race: st.checkbox(race, value=(race in st.session_state.selected_races), key=f"race_{sanitize_key(race)}")
                 for race in race_opts
             }
+
             st.session_state.selected_races = [race for race, selected in race_selections.items() if selected]
             if len(st.session_state.selected_races) == len(race_opts) and not select_all_races:
                 st.rerun()
@@ -180,7 +314,7 @@ def show_comparison_page():
     # Gender selection
     with colf4:
         with st.expander("Gender", expanded=False):
-            gender = st.radio("", options=["Male", "Female"], horizontal=True, index=0)
+            gender = st.radio("Gender", options=["Male", "Female"], horizontal=True, index=0, label_visibility="collapsed")
 
     # Clean left-aligned Clear Filters without ghost box
     clear_col = st.columns([3, 1, 1, 1])[0]
@@ -190,7 +324,6 @@ def show_comparison_page():
             st.session_state.selected_classes = []
             st.session_state.selected_boosts = []
             st.rerun()
-
 
     with st.expander("📊 Minimum Stat Requirements", expanded=False):
         col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
@@ -204,32 +337,37 @@ def show_comparison_page():
 
     col_order = ["Race", "Class", "STR", "INT", "WIS", "DEX", "CON", "Boost", "S+D", "S+D+I", "TOT"]
 
-    def format_copy_text(df):
-        headers = col_order
-        lines = []
-        header_line = "{:<8} {:<6} {:<5} {:<4} {:<4} {:<4} {:<4} {:<4} {:<5} {:<6} {:<4}".format(*headers)
-        lines.append(header_line)
-        for _, row in df.iterrows():
-            race = RACE_ABBR.get(row["Race"], row["Race"])
-            clas = CLASS_ABBR.get(row["Class"], row["Class"])
-            boost = str(row["Boost"])
-            stats = [str(row[col]) for col in headers[3:]]
-            line = "{:<8} {:<6} {:<5} {:<4} {:<4} {:<4} {:<4} {:<4} {:<5} {:<6} {:<4}".format(race, clas, boost, *stats)
-            lines.append(line)
-        return "```text\n" + "\n".join(lines) + "\n```"
-
     if st.button("🚀 Generate Comparison", use_container_width=True, help="Apply all filters and show matching combinations"):
         filtered_df = df.copy()
         for col in ["STR", "INT", "WIS", "DEX", "CON"]:
             filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce").fillna(0).astype(int)
 
+        # Track applied filters for the summary
+        filter_summary = []
+        
         # Only apply filters if selections exist
         if st.session_state.selected_races:
             filtered_df = filtered_df[filtered_df["Race"].isin(st.session_state.selected_races)]
+            if len(st.session_state.selected_races) < 5:  # Show individual races if not too many
+                race_str = ", ".join(st.session_state.selected_races)
+            else:
+                race_str = f"{len(st.session_state.selected_races)} races"
+            filter_summary.append(f"Race: {race_str}")
+            
         if st.session_state.selected_classes:
             filtered_df = filtered_df[filtered_df["Class"].isin(st.session_state.selected_classes)]
+            if len(st.session_state.selected_classes) < 5:  # Show individual classes if not too many
+                class_str = ", ".join(st.session_state.selected_classes)
+            else:
+                class_str = f"{len(st.session_state.selected_classes)} classes"
+            filter_summary.append(f"Class: {class_str}")
+            
         if st.session_state.selected_boosts:
             filtered_df = filtered_df[filtered_df["Boost"].isin(st.session_state.selected_boosts)]
+            boost_str = ", ".join(map(str, st.session_state.selected_boosts))
+            filter_summary.append(f"Boost: {boost_str}")
+
+        # Don't add gender to filter summary per requirements
 
         if gender == "Male":
             filtered_df["STR"] += 2
@@ -240,20 +378,37 @@ def show_comparison_page():
             val = st.session_state.get(key, "0")
             return int(val) if str(val).isdigit() else 0
 
+        # Add stat minimums to filter summary if they're > 0
+        min_stats = {
+            "STR": get_stat("min_str"),
+            "INT": get_stat("min_int"),
+            "WIS": get_stat("min_wis"),
+            "DEX": get_stat("min_dex"),
+            "CON": get_stat("min_con"),
+            "S+D": get_stat("min_sd"),
+            "S+D+I": get_stat("min_sdi")
+        }
+        
+        stat_filters = [f"{stat}: ≥{val}" for stat, val in min_stats.items() if val > 0]
+        if stat_filters:
+            filter_summary.append("Min Stats: " + ", ".join(stat_filters))
+
         filtered_df["TOT"] = filtered_df["STR"] + filtered_df["INT"] + filtered_df["WIS"] + filtered_df["DEX"] + filtered_df["CON"]
         filtered_df["S+D"] = filtered_df["STR"] + filtered_df["DEX"]
         filtered_df["S+D+I"] = filtered_df["STR"] + filtered_df["DEX"] + filtered_df["INT"]
 
         filtered_df = filtered_df[
-            (filtered_df["STR"] >= get_stat("min_str")) &
-            (filtered_df["INT"] >= get_stat("min_int")) &
-            (filtered_df["WIS"] >= get_stat("min_wis")) &
-            (filtered_df["DEX"] >= get_stat("min_dex")) &
-            (filtered_df["CON"] >= get_stat("min_con")) &
-            (filtered_df["S+D"] >= get_stat("min_sd")) &
-            (filtered_df["S+D+I"] >= get_stat("min_sdi"))
+            (filtered_df["STR"] >= min_stats["STR"]) &
+            (filtered_df["INT"] >= min_stats["INT"]) &
+            (filtered_df["WIS"] >= min_stats["WIS"]) &
+            (filtered_df["DEX"] >= min_stats["DEX"]) &
+            (filtered_df["CON"] >= min_stats["CON"]) &
+            (filtered_df["S+D"] >= min_stats["S+D"]) &
+            (filtered_df["S+D+I"] >= min_stats["S+D+I"])
         ]
 
+        # Store filter summary in session state
+        st.session_state["filter_summary"] = filter_summary
         st.session_state["comparison_df"] = filtered_df.reset_index(drop=True)
         st.rerun()
 
@@ -261,14 +416,20 @@ def show_comparison_page():
     if "comparison_df" in st.session_state and not st.session_state["comparison_df"].empty:
         df_view = st.session_state["comparison_df"].drop(columns=["id"], errors="ignore")
 
+        # Sort options
         with st.expander("**Sort results:**", expanded=False):
             sort_col = st.radio(
                 "", ["STR", "INT", "WIS", "DEX", "CON", "S+D", "S+D+I", "TOT"],
-                index=7, horizontal=True
+                index=5, horizontal=True  # Default is S+D (index 5)
             )
             df_view = df_view.sort_values(by=sort_col, ascending=False).reset_index(drop=True)
+            # Store sorting info for summary
+            st.session_state["sort_by"] = sort_col
 
         st.subheader("🗒 Matching Combinations")
+        
+        # Only display the number of combinations found
+        st.write(f"Found {len(df_view)} matching combinations")
         
         # Convert dataframe to HTML
         def generate_html_table(df, height_px):
@@ -361,26 +522,38 @@ def show_comparison_page():
         html_table = generate_html_table(df_view[col_order], table_height)
         st.markdown(html_table, unsafe_allow_html=True)
 
-        copy_text_full = format_copy_text_full(df_view[col_order])
-        copy_text_mobile = format_copy_text_mobile(df_view)
-
-        copy_id_full = f"copyFull_{int(pd.Timestamp.now().timestamp() * 1000)}"
-        copy_id_mobile = f"copyMobile_{int(pd.Timestamp.now().timestamp() * 1000)}"
+        # Use the compact format for copying with filter summary
+        copy_text = format_copy_text_compact(
+            df_view, 
+            filter_summary=st.session_state.get("filter_summary", []),
+            sort_by=st.session_state.get("sort_by", "TOT")
+        )
+        copy_id = f"copyText_{int(pd.Timestamp.now().timestamp() * 1000)}"
 
         components.html(f"""
             <div style="text-align: left; max-width: 400px; margin-left: 0;">
-                <textarea id="{copy_id_full}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text_full}</textarea>
-                <textarea id="{copy_id_mobile}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text_mobile}</textarea>
+                <textarea id="{copy_id}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text}</textarea>
 
-                <button onclick="
-                    var textArea = document.getElementById('{copy_id_full}');
+                <button id="copyBtn_{copy_id}" onclick="
+                    var textArea = document.getElementById('{copy_id}');
                     textArea.select();
                     if (document.execCommand('copy')) {{
                         window.parent.postMessage({{type: 'copied'}}, '*');
+                        var btn = document.getElementById('copyBtn_{copy_id}');
+                        btn.innerHTML = '✅ Copied!';
+                        btn.style.backgroundColor = '#4CAF50';
+                        btn.style.color = 'white';
+                        btn.style.borderColor = '#4CAF50';
+                        setTimeout(function() {{
+                            btn.innerHTML = '📋 Copy to Clipboard';
+                            btn.style.backgroundColor = '#f0f2f6';
+                            btn.style.color = 'black';
+                            btn.style.borderColor = '#ccc';
+                        }}, 3000);
                     }}
                 " style="
                     padding: 10px 18px;
-                    margin: 8px 0 4px;
+                    margin: 8px 0;
                     background-color: #f0f2f6;
                     border: 1px solid #ccc;
                     border-radius: 6px;
@@ -388,25 +561,7 @@ def show_comparison_page():
                     cursor: pointer;
                     width: 100%;
                     box-sizing: border-box;
-                ">📋 Copy Full (Desktop)</button>
-
-                <button onclick="
-                    var textArea = document.getElementById('{copy_id_mobile}');
-                    textArea.select();
-                    if (document.execCommand('copy')) {{
-                        window.parent.postMessage({{type: 'copied'}}, '*');
-                    }}
-                " style="
-                    padding: 10px 18px;
-                    margin: 4px 0 10px;
-                    background-color: #f0f2f6;
-                    border: 1px solid #ccc;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    cursor: pointer;
-                    width: 100%;
-                    box-sizing: border-box;
-                ">📱 Copy Compact (Mobile)</button>
+                ">📋 Copy to Clipboard</button>
 
                 <div id="copied-message-container" style="text-align: left;"></div>
             </div>
@@ -418,22 +573,6 @@ def show_comparison_page():
                         window.dispatchEvent(copiedEvent);
                     }}
                 }});
-
-                window.addEventListener("streamlit:copied", function() {{
-                    const container = document.getElementById("copied-message-container");
-                    const copiedBanner = document.createElement("div");
-                    copiedBanner.innerText = "✅ Copied!";
-                    copiedBanner.style.color = "green";
-                    copiedBanner.style.fontWeight = "bold";
-                    copiedBanner.style.marginTop = "10px";
-                    copiedBanner.style.fontSize = "16px";
-                    container.innerHTML = "";
-                    container.appendChild(copiedBanner);
-                    setTimeout(() => container.innerHTML = "", 2000);
-                }});
             </script>
-        """, height=160)
-
-
-
+        """, height=140)
 
