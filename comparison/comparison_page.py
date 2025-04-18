@@ -318,27 +318,59 @@ def show_comparison_page():
         st.markdown(html_table, unsafe_allow_html=True)
 
         copy_text = format_copy_text(df_view[col_order])
+        copy_id = f"copyTarget_{int(pd.Timestamp.now().timestamp() * 1000)}"
 
-        if st.button("📋 Copy Results to Clipboard", type="secondary", key="copy_button"):
-            random_id = f"copyTarget_{int(pd.Timestamp.now().timestamp() * 1000)}"
-            components.html(f"""
-                <textarea id="{random_id}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text}</textarea>
-                <script>
-                async function copyToClipboard() {{
-                    var textArea = document.getElementById("{random_id}");
-                    textArea.select();
-                    try {{
-                        await navigator.clipboard.writeText(textArea.value);
-                        return true;
-                    }} catch (err) {{
-                        try {{
-                            return document.execCommand('copy');
-                        }} catch (err) {{
-                            return false;
-                        }}
+        # Show the button using HTML, mobile-safe
+        components.html(f"""
+            <textarea id="{copy_id}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text}</textarea>
+            <button onclick="
+                var textArea = document.getElementById('{copy_id}');
+                textArea.select();
+                try {{
+                    var successful = document.execCommand('copy');
+                    if (!successful) {{
+                        alert('Copy failed');
+                    }} else {{
+                        window.parent.postMessage({{type: 'copied'}}, '*');
                     }}
+                }} catch (err) {{
+                    alert('Unable to copy. Try manually selecting text.');
                 }}
-                copyToClipboard();
-                </script>
-            """, height=0)
-            st.markdown('<div style="color: green; font-weight: bold;">✅ Copied!</div>', unsafe_allow_html=True)
+            " style="
+                padding: 8px 16px;
+                background-color: #f0f2f6;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            ">
+                📋 Copy Results to Clipboard
+            </button>
+            <script>
+                window.addEventListener('message', function(event) {{
+                    if (event.data && event.data.type === 'copied') {{
+                        const streamlitEvent = new Event('streamlit:copied');
+                        window.dispatchEvent(streamlitEvent);
+                    }}
+                }});
+            </script>
+        """, height=70)  # <- Increased height to prevent border cutoff
+
+        # Display "✅ Copied!" message if the JS event triggers it
+        components.html("""
+        <script>
+            window.addEventListener("streamlit:copied", function() {
+                const copiedBanner = document.createElement("div");
+                copiedBanner.innerText = "✅ Copied!";
+                copiedBanner.style.color = "green";
+                copiedBanner.style.fontWeight = "bold";
+                copiedBanner.style.marginTop = "10px";
+                copiedBanner.style.marginBottom = "10px";
+                copiedBanner.style.fontSize = "16px";
+                document.body.appendChild(copiedBanner);
+                setTimeout(() => copiedBanner.remove(), 2000);
+            });
+        </script>
+        """, height=0)
+
+
