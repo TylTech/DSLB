@@ -34,6 +34,50 @@ RACE_ABBR = {
     "Lagodae": "Lagoda", "Lepori": "Lepori"
 }
 
+def format_copy_text_full(df):
+    headers = ["Race", "Class", "STR", "INT", "WIS", "DEX", "CON", "Boost", "S+D", "S+D+I"]
+    lines = []
+    header_line = "{:<12} {:<10}   {:<4} {:<4} {:<4} {:<4} {:<4}   {:<5}   {:<6} {:<6}".format(*headers)
+    lines.append(header_line)
+    for _, row in df.iterrows():
+        race = RACE_ABBR.get(row["Race"], row["Race"])
+        clas = CLASS_ABBR.get(row["Class"], row["Class"])
+        boost = str(row["Boost"])
+        stats = {
+            "STR": str(row["STR"]), "INT": str(row["INT"]), "WIS": str(row["WIS"]),
+            "DEX": str(row["DEX"]), "CON": str(row["CON"]), "S+D": str(row["S+D"]),
+            "S+D+I": str(row["S+D+I"])
+        }
+        line = "{:<12} {:<10}   {:<4} {:<4} {:<4} {:<4} {:<4}   {:<5}   {:<6} {:<6}".format(
+            race, clas, stats["STR"], stats["INT"], stats["WIS"], stats["DEX"], stats["CON"],
+            boost, stats["S+D"], stats["S+D+I"]
+        )
+        lines.append(line)
+    return "```text\n" + "\n".join(lines) + "\n```"
+
+def format_copy_text_mobile(df):
+    headers = ["Race", "Cls", "S", "I", "W", "D", "C", "Bst", "SD", "SDI"]
+    lines = []
+    header_line = "{:<6} {:<4}   {:<2} {:<2} {:<2} {:<2} {:<2}   {:<4}   {:<3} {:<4}".format(*headers)
+    lines.append(header_line)
+    for _, row in df.iterrows():
+        race = RACE_ABBR.get(row["Race"], row["Race"])
+        clas = CLASS_ABBR.get(row["Class"], row["Class"])
+        boost = str(row["Boost"])
+        stats = {
+            "S": str(row["STR"]), "I": str(row["INT"]), "W": str(row["WIS"]),
+            "D": str(row["DEX"]), "C": str(row["CON"]), "SD": str(row["S+D"]),
+            "SDI": str(row["S+D+I"])
+        }
+        line = "{:<6} {:<4}   {:<2} {:<2} {:<2} {:<2} {:<2}   {:<4}   {:<3} {:<4}".format(
+            race, clas, stats["S"], stats["I"], stats["W"], stats["D"], stats["C"],
+            boost, stats["SD"], stats["SDI"]
+        )
+        lines.append(line)
+    return "```text\n" + "\n".join(lines) + "\n```"
+
+
+
 def show_comparison_page():
     @st.cache_data(ttl=60)
     def load_combos():
@@ -158,7 +202,7 @@ def show_comparison_page():
         st.session_state["min_sd"] = col6.text_input("S+D", value=st.session_state.get("min_sd", "0"))
         st.session_state["min_sdi"] = col7.text_input("S+D+I", value=st.session_state.get("min_sdi", "0"))
 
-    col_order = ["Race", "Class", "Boost", "STR", "INT", "WIS", "DEX", "CON", "S+D", "S+D+I", "TOT"]
+    col_order = ["Race", "Class", "STR", "INT", "WIS", "DEX", "CON", "Boost", "S+D", "S+D+I", "TOT"]
 
     def format_copy_text(df):
         headers = col_order
@@ -317,60 +361,79 @@ def show_comparison_page():
         html_table = generate_html_table(df_view[col_order], table_height)
         st.markdown(html_table, unsafe_allow_html=True)
 
-        copy_text = format_copy_text(df_view[col_order])
-        copy_id = f"copyTarget_{int(pd.Timestamp.now().timestamp() * 1000)}"
+        copy_text_full = format_copy_text_full(df_view[col_order])
+        copy_text_mobile = format_copy_text_mobile(df_view)
 
-        # Show the button using HTML, mobile-safe
+        copy_id_full = f"copyFull_{int(pd.Timestamp.now().timestamp() * 1000)}"
+        copy_id_mobile = f"copyMobile_{int(pd.Timestamp.now().timestamp() * 1000)}"
+
         components.html(f"""
-            <textarea id="{copy_id}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text}</textarea>
-            <button onclick="
-                var textArea = document.getElementById('{copy_id}');
-                textArea.select();
-                try {{
-                    var successful = document.execCommand('copy');
-                    if (!successful) {{
-                        alert('Copy failed');
-                    }} else {{
+            <div style="text-align: left; max-width: 400px; margin-left: 0;">
+                <textarea id="{copy_id_full}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text_full}</textarea>
+                <textarea id="{copy_id_mobile}" style="position:absolute; left:-1000px; top:-1000px;">{copy_text_mobile}</textarea>
+
+                <button onclick="
+                    var textArea = document.getElementById('{copy_id_full}');
+                    textArea.select();
+                    if (document.execCommand('copy')) {{
                         window.parent.postMessage({{type: 'copied'}}, '*');
                     }}
-                }} catch (err) {{
-                    alert('Unable to copy. Try manually selecting text.');
-                }}
-            " style="
-                padding: 8px 16px;
-                background-color: #f0f2f6;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-            ">
-                📋 Copy Results to Clipboard
-            </button>
+                " style="
+                    padding: 10px 18px;
+                    margin: 8px 0 4px;
+                    background-color: #f0f2f6;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    width: 100%;
+                    box-sizing: border-box;
+                ">📋 Copy Full (Desktop)</button>
+
+                <button onclick="
+                    var textArea = document.getElementById('{copy_id_mobile}');
+                    textArea.select();
+                    if (document.execCommand('copy')) {{
+                        window.parent.postMessage({{type: 'copied'}}, '*');
+                    }}
+                " style="
+                    padding: 10px 18px;
+                    margin: 4px 0 10px;
+                    background-color: #f0f2f6;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    width: 100%;
+                    box-sizing: border-box;
+                ">📱 Copy Compact (Mobile)</button>
+
+                <div id="copied-message-container" style="text-align: left;"></div>
+            </div>
+
             <script>
                 window.addEventListener('message', function(event) {{
                     if (event.data && event.data.type === 'copied') {{
-                        const streamlitEvent = new Event('streamlit:copied');
-                        window.dispatchEvent(streamlitEvent);
+                        const copiedEvent = new Event('streamlit:copied');
+                        window.dispatchEvent(copiedEvent);
                     }}
                 }});
-            </script>
-        """, height=70)  # <- Increased height to prevent border cutoff
 
-        # Display "✅ Copied!" message if the JS event triggers it
-        components.html("""
-        <script>
-            window.addEventListener("streamlit:copied", function() {
-                const copiedBanner = document.createElement("div");
-                copiedBanner.innerText = "✅ Copied!";
-                copiedBanner.style.color = "green";
-                copiedBanner.style.fontWeight = "bold";
-                copiedBanner.style.marginTop = "10px";
-                copiedBanner.style.marginBottom = "10px";
-                copiedBanner.style.fontSize = "16px";
-                document.body.appendChild(copiedBanner);
-                setTimeout(() => copiedBanner.remove(), 2000);
-            });
-        </script>
-        """, height=0)
+                window.addEventListener("streamlit:copied", function() {{
+                    const container = document.getElementById("copied-message-container");
+                    const copiedBanner = document.createElement("div");
+                    copiedBanner.innerText = "✅ Copied!";
+                    copiedBanner.style.color = "green";
+                    copiedBanner.style.fontWeight = "bold";
+                    copiedBanner.style.marginTop = "10px";
+                    copiedBanner.style.fontSize = "16px";
+                    container.innerHTML = "";
+                    container.appendChild(copiedBanner);
+                    setTimeout(() => container.innerHTML = "", 2000);
+                }});
+            </script>
+        """, height=160)
+
+
 
 
