@@ -67,120 +67,86 @@ def show_comparison_page():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Create a single clean row of filter controls
-    colf1, colf2, colf3, colf4, colf5 = st.columns([3, 3, 3, 1.5, 1.5])
-    
-    # Race selection expander
+    # Create a single clean row of filter controls (now 4 columns)
+    colf1, colf2, colf3, colf4 = st.columns(4)
+
+    # Race selection
     with colf1:
         with st.expander("Race Filter", expanded=False):
-            # Determine if "Select All" should be checked
             all_races_selected = len(st.session_state.selected_races) == len(race_opts)
-            
-            # Select All checkbox at the top
             select_all_races = st.checkbox("Select All Races", value=all_races_selected, key="select_all_races")
-            
-            # If Select All state changed, update accordingly
             if select_all_races and not all_races_selected:
-                # User just checked "Select All" - select all races
                 st.session_state.selected_races = race_opts.copy()
                 st.rerun()
             elif not select_all_races and all_races_selected:
-                # User just unchecked "Select All" - deselect all races
                 st.session_state.selected_races = []
                 st.rerun()
-            
-            # Individual race checkboxes
-            race_selections = {}
-            for race in race_opts:
-                race_checked = race in st.session_state.selected_races
-                race_selections[race] = st.checkbox(race, value=race_checked, key=f"race_{race}")
-            
-            # Update selected races based on checkboxes
+            race_selections = {
+                race: st.checkbox(race, value=(race in st.session_state.selected_races), key=f"race_{race}")
+                for race in race_opts
+            }
             st.session_state.selected_races = [race for race, selected in race_selections.items() if selected]
-            
-            # Rerun if Select All state needs to be updated
             if len(st.session_state.selected_races) == len(race_opts) and not select_all_races:
                 st.rerun()
             elif len(st.session_state.selected_races) < len(race_opts) and select_all_races:
                 st.rerun()
-    
-    # Class selection expander
+
+    # Class selection
     with colf2:
         with st.expander("Class Filter", expanded=False):
-            # Determine if "Select All" should be checked
             all_classes_selected = len(st.session_state.selected_classes) == len(class_opts)
-            
-            # Select All checkbox at the top
             select_all_classes = st.checkbox("Select All Classes", value=all_classes_selected, key="select_all_classes")
-            
-            # If Select All state changed, update accordingly
             if select_all_classes and not all_classes_selected:
                 st.session_state.selected_classes = class_opts.copy()
                 st.rerun()
             elif not select_all_classes and all_classes_selected:
                 st.session_state.selected_classes = []
                 st.rerun()
-            
-            # Individual class checkboxes
-            class_selections = {}
-            for cls in class_opts:
-                class_checked = cls in st.session_state.selected_classes
-                class_selections[cls] = st.checkbox(cls, value=class_checked, key=f"class_{cls}")
-            
-            # Update selected classes based on checkboxes
+            class_selections = {
+                cls: st.checkbox(cls, value=(cls in st.session_state.selected_classes), key=f"class_{cls}")
+                for cls in class_opts
+            }
             st.session_state.selected_classes = [cls for cls, selected in class_selections.items() if selected]
-            
-            # Rerun if Select All state needs to be updated
             if len(st.session_state.selected_classes) == len(class_opts) and not select_all_classes:
                 st.rerun()
             elif len(st.session_state.selected_classes) < len(class_opts) and select_all_classes:
                 st.rerun()
-    
-    # Boost selection expander
+
+    # Boost selection
     with colf3:
         with st.expander("Boost Filter", expanded=False):
-            # Determine if "Select All" should be checked
             all_boosts_selected = len(st.session_state.selected_boosts) == len(boost_opts)
-            
-            # Select All checkbox at the top
             select_all_boosts = st.checkbox("Select All Boosts", value=all_boosts_selected, key="select_all_boosts")
-            
-            # If Select All state changed, update accordingly
             if select_all_boosts and not all_boosts_selected:
                 st.session_state.selected_boosts = boost_opts.copy()
                 st.rerun()
             elif not select_all_boosts and all_boosts_selected:
                 st.session_state.selected_boosts = []
                 st.rerun()
-            
-            # Individual boost checkboxes
-            boost_selections = {}
-            for boost in boost_opts:
-                boost_checked = boost in st.session_state.selected_boosts
-                boost_selections[boost] = st.checkbox(str(boost), value=boost_checked, key=f"boost_{boost}")
-            
-            # Update selected boosts based on checkboxes
+            boost_selections = {
+                boost: st.checkbox(str(boost), value=(boost in st.session_state.selected_boosts), key=f"boost_{boost}")
+                for boost in boost_opts
+            }
             st.session_state.selected_boosts = [boost for boost, selected in boost_selections.items() if selected]
-            
-            # Rerun if Select All state needs to be updated
             if len(st.session_state.selected_boosts) == len(boost_opts) and not select_all_boosts:
                 st.rerun()
             elif len(st.session_state.selected_boosts) < len(boost_opts) and select_all_boosts:
                 st.rerun()
-    
-    # Clear filters button - properly aligned with expanders
+
+    # Gender selection
     with colf4:
-        with st.expander("Clear Filters", expanded=False):
-            if st.button("🧹 Clear All", type="secondary", use_container_width=True):
-                st.session_state.selected_races = []
-                st.session_state.selected_classes = []
-                st.session_state.selected_boosts = []
-                st.rerun()
-    
-    # Gender selection as expander to match the row alignment
-    with colf5:
         with st.expander("Gender", expanded=False):
             gender = st.radio("", options=["Male", "Female"], horizontal=True, index=0)
+
+    # Clean left-aligned Clear Filters without ghost box
+    clear_col = st.columns([3, 1, 1, 1])[0]
+    with clear_col:
+        if st.button("🧹 Clear All Filters", type="secondary", key="clear_filters_button"):
+            st.session_state.selected_races = []
+            st.session_state.selected_classes = []
+            st.session_state.selected_boosts = []
+            st.rerun()
+
 
     with st.expander("📊 Minimum Stat Requirements", expanded=False):
         col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
@@ -251,7 +217,7 @@ def show_comparison_page():
     if "comparison_df" in st.session_state and not st.session_state["comparison_df"].empty:
         df_view = st.session_state["comparison_df"].drop(columns=["id"], errors="ignore")
 
-        with st.expander("**Sort results**)", expanded=False):
+        with st.expander("**Sort results:**", expanded=False):
             sort_col = st.radio(
                 "", ["STR", "INT", "WIS", "DEX", "CON", "S+D", "S+D+I", "TOT"],
                 index=7, horizontal=True
