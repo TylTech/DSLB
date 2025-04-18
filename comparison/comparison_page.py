@@ -63,7 +63,8 @@ def format_copy_text_compact(df, filter_summary=None, sort_by=None):
     }
     
     # Create a header line with proper spacing - using a monospace string format
-    header_line = f"{'Rac':<4}{'Cls':<5}{'S':<3}{'I':<3}{'W':<3}{'D':<3}{'C':<3}{'Bo':<4}{'SD':<5}{'SDI'}"
+    header_line = f"{'Rac':<4}{'Cls':<5}{'S':<3}{'I':<3}{'W':<3}{'D':<3}{'C':<3}{'Bo':<4}{'SD'}"
+
 
     lines.append(header_line)
     
@@ -74,13 +75,14 @@ def format_copy_text_compact(df, filter_summary=None, sort_by=None):
         boost = str(row["Boost"])
         stats = {
             "S": str(row["STR"]), "I": str(row["INT"]), "W": str(row["WIS"]),
-            "D": str(row["DEX"]), "C": str(row["CON"]), "SD": str(row["S+D"]),
-            "SDI": str(row["S+D+I"])
+            "D": str(row["DEX"]), "C": str(row["CON"]), "SD": str(row["S+D"])
         }
+
         
         # Format each column with fixed width to ensure alignment
         # Format: each value has fixed width with spaces after
-        line = f"{race:<4}{clas:<5}{stats['S']:<3}{stats['I']:<3}{stats['W']:<3}{stats['D']:<3}{stats['C']:<3}{boost:<4}{stats['SD']:<5}{stats['SDI']}"
+        line = f"{race:<4}{clas:<5}{stats['S']:<3}{stats['I']:<3}{stats['W']:<3}{stats['D']:<3}{stats['C']:<3}{boost:<4}{stats['SD']}"
+
         lines.append(line)
     
     # Add a blank line after the table
