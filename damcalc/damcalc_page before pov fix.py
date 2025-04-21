@@ -85,7 +85,7 @@ def show_damcalc_page():
             log_content = ""
 
         if log_content:
-            player_name = char_name if char_name else "Charname"
+            player_name = char_name if char_name else "Player"
             st.session_state.damage_data = analyze_damage_log(log_content, player_name)
             st.session_state.char_name = player_name
         else:
@@ -209,19 +209,6 @@ def should_skip_line(line):
     
     return False
 
-def normalize_combat_name(name, player_name):
-    """
-    Normalize 'You' and 'Your' in names to the player name for accurate parsing.
-    E.g., 'Your beating' → 'Charname -> beating'
-    """
-    name = name.strip()
-    if name.lower() == "you":
-        return player_name
-    if name.lower().startswith("your "):
-        return f"{player_name} -> {name[5:].strip()}"
-    return name
-
-
 def clean_entity_name(name, player_name):
     """
     Clean and normalize entity names - based on CMUD's DMCleaner mode 1 and 2.
@@ -277,7 +264,7 @@ def extract_known_players(log, player_name):
 def extract_attack_type(source_text):
     """
     Extract attack type from source text - based on CMUD's DMCleaner mode 3.
-    This handles cases like "Dhavi's pierce" -> "pierce" or "Your beating" -> "beating"
+    This handles cases like "Dhavi's pierce" -> "pierce"
     """
     # Special attack patterns
     if "draws life from" in source_text:
@@ -304,12 +291,6 @@ def extract_attack_type(source_text):
             if attack_words and attack_words[0].lower() not in damage_verbs:
                 return attack_words[0].lower()  # Return just the first word after possessive
     
-    # Check if source contains attack type (like "Your beating")
-    words = source_text.split()
-    if len(words) > 1 and words[0].lower() in ["your", "you"]:
-        # Return the second word as the attack type
-        return words[1].lower()
-    
     # Default to generic attack type
     return "attack"
 
@@ -322,19 +303,10 @@ def is_player_character(name, player_name, known_players=None):
     if not name:
         return False
 
-    # Always count "Your" or your character name as a player
-    if name.lower() == "your" or name.lower() == player_name.lower():
-        return True
-        
-    # In your specific combat scenario, count Tsacherus as a player
-    if name.lower() == "tsacherus":
-        return True
-
-    # Check against known players list
     if known_players:
         return name in known_players
 
-    # Fallback logic for other cases
+    # fallback logic
     name_lower = name.lower()
     player_name_lower = player_name.strip().lower()
 
@@ -479,32 +451,6 @@ def record_damage(damage_data, source, target, damage_value, damage_type=None, p
     if target_clean.lower() in ["him", "her"]:
         target_clean = source_clean  # CMUD uses source as target in these cases
 
-    # Fix "Your beating" to just "Your" as source
-    if source_clean.lower().startswith("your "):
-        # Extract the actual attack type if possible
-        if damage_type == "attack":
-            parts = source_clean.split()
-            if len(parts) > 1:
-                damage_type = parts[1].lower()
-        # Use player_name instead of "Your"
-        source_clean = player_name
-    
-    # Also handle just "Your" as a source (not followed by anything)
-    if source_clean.lower() == "your":
-        source_clean = player_name
-    
-    # Fix for special high-damage attacks (like "obliterates")
-    # If the damage type is a special attack from SPECIAL_DAMAGE_PATTERNS
-    # and the damage verb is one of the uppercase ones (like "OBLITERATES")
-    if damage_type.lower() in [verb.lower() for verb, _ in DAMAGE_VALUES.items() 
-                              if verb.isupper() or verb in ["DEMOLISHES", "DEVASTATES", "OBLITERATES"]]:
-        # And if the source contains "beating" or another attack type
-        if " " in source_clean and not source_clean.lower().startswith("a "):
-            parts = source_clean.split()
-            if len(parts) > 1 and parts[0].lower() != "an":
-                # Keep the first part (character name) and extract attack type
-                source_clean = parts[0]
-    
     # --- Record damage in various categories ---
 
     # 1. Total damage done (by source)

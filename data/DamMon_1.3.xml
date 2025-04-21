@@ -1,0 +1,924 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<cmud>
+  <class name="DamMon">
+    <class name="DMTriggers" enabled="false">
+      <trigger name="16_DEVASTATES" priority="28070" case="true">
+        <pattern>(*) (DEVASTATE?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $str1 $str2 $intVal
+$intVal=68
+$str1=%replace(%1,"***","")
+$str2=%replace(%3,"*** ","")
+#IF (@DMDisp=1) {#SUB {$str1"*** "%ansi(high,red)%2 %ansi(reset)"***" %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)$str2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart($str1,$intVal,$str2)}</value>
+      </trigger>
+      <trigger name="01_scratches" priority="28080" case="true">
+        <pattern>(*) scratches (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=2.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)"scratches" %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%2)}</value>
+      </trigger>
+      <trigger name="02_grazes" priority="28090" case="true">
+        <pattern>(*) (graze?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=6.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="03_hits" priority="28110" case="true">
+        <pattern>(*) (hit?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=10.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="04_injures" priority="28120" case="true">
+        <pattern>(*) (injure?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=14.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="05_wounds" priority="28130" case="true">
+        <pattern>(*) (wound?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=18.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="06_mauls" priority="28140" case="true">
+        <pattern>(*) (maul?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=22.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="07_decimates" priority="28150" case="true">
+        <pattern>(*) (decimate?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=26.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="08_devastates" priority="28160" case="true">
+        <pattern>(*) (devastate?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=30.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="10_MUTILATES" priority="28170" case="true">
+        <pattern>(*) (MUTILATE?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=38.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(yellow)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="11_DISEMBOWELS" priority="28180" case="true">
+        <pattern>(*) (DISEMBOWEL?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=42.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(yellow)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="12_DISMEMBERS" priority="28190" case="true">
+        <pattern>(*) (DISMEMBER?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=46.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(yellow)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="13_MASSACRES" priority="28200" case="true">
+        <pattern>(*) (MASSACRE?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=50.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(yellow)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="14_MANGLES" priority="28210" case="true">
+        <pattern>(*) (MANGLE?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=54.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(yellow)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <trigger name="15_DEMOLISHES" priority="28220" case="true">
+        <pattern>(*) (DEMOLISH??) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $str1 $str2 $intVal
+$intVal=58.5
+$str1=%replace(%1,"***","")
+$str2=%replace(%3,"*** ","")
+#IF (@DMDisp=1) {#SUB {$str1"*** "%ansi(high,red)%2 %ansi(reset)"***" %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)$str2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart($str1,$intVal,$str2)}</value>
+      </trigger>
+      <trigger name="17_OBLITERATES" priority="28230" case="true">
+        <pattern>(*) (OBLITERATE?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $str1 $str2 $intVal
+$intVal=88
+$str1=%replace(%1,"===","")
+$str2=%replace(%3,"=== ","")
+#IF (@DMDisp=1) {#SUB {$str1"=== "%ansi(high,red)%2 %ansi(reset)"===" %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)$str2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart($str1,$intVal,$str2)}</value>
+      </trigger>
+      <trigger name="18_ANNIHILATES" priority="28240" case="true">
+        <pattern>(*) (ANNIHILATE?) (*)</pattern>
+        <value><![CDATA[#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $str1 $str2 $intVal
+$intVal=113
+$str1=%replace(%1,">>>","")
+$str2=%replace(%3,"<<< ","")
+#IF (@DMDisp=1) {#SUB {$str1">>> "%ansi(high,red)%2 %ansi(reset)"<<<" %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)$str2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart($str1,$intVal,$str2)}]]></value>
+      </trigger>
+      <trigger name="19_ERADICATES" priority="28250" case="true">
+        <pattern>(*) (ERADICATE?) (*)</pattern>
+        <value><![CDATA[#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $str1 $str2 $intVal
+$intVal=138
+$str1=%replace(%1,"<<<","")
+$str2=%replace(%3,">>> ","")
+#IF (@DMDisp=1) {#SUB {$str1"<<< "%ansi(high,red)%2 %ansi(reset)">>>" %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)$str2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart($str1,$intVal,$str2)}]]></value>
+      </trigger>
+      <trigger name="20_GHASTLY" priority="28260" case="true">
+        <pattern>(*) GHASTLY (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=163
+#IF (@DMDisp=1) {#SUB {%1 %ansi(high,red)"G"%ansi(white)"H"%ansi(high,red)"A"%ansi(white)"S"%ansi(high,red)"T"%ansi(white)"L"%ansi(high,red)"Y"%ansi(reset) %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%2)}</value>
+      </trigger>
+      <trigger name="21_HORRID" priority="28270" case="true">
+        <pattern>(*) HORRID (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=188
+#IF (@DMDisp=1) {#SUB {%1 %ansi(high,red)"H"%ansi(white)"O"%ansi(high,red)"RR"%ansi(white)"I"%ansi(high,red)"D"%ansi(reset) %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%2)}</value>
+      </trigger>
+      <trigger name="22_DREADFUL" priority="28280" case="true">
+        <pattern>(*) DREADFUL (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=213
+#IF (@DMDisp=1) {#SUB {%1 %ansi(high,red)"D"%ansi(white)"R"%ansi(high,red)"E"%ansi(white)"AD"%ansi(high,red)"F"%ansi(white)"U"%ansi(high,red)"L"%ansi(reset) %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%2)}</value>
+      </trigger>
+      <trigger name="23_HIDEOUS" priority="28290" case="true">
+        <pattern>(*) HIDEOUS (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $str1 $str2 $str3 $intVal
+$intVal=238
+#IF (@DMDisp=1) {#SUB {%1 %ansi(high,red)"H"%ansi(white)"I"%ansi(high,red)"D"%ansi(white)"E"%ansi(high,red)"O"%ansi(white)"U"%ansi(high,red)"S"%ansi(reset) %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%2)}</value>
+      </trigger>
+      <trigger name="24_INDESCRIBABLE" priority="28300" case="true">
+        <pattern>(*) INDESCRIBABLE (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=263
+#IF (@DMDisp=1) {#SUB {%1 %ansi(blink)%ansi(high,red)"I"%ansi(white)"N"%ansi(high,red)"D"%ansi(white)"E"%ansi(high,red)"S"%ansi(white)"C"%ansi(high,red)"R"%ansi(white)"I"%ansi(high,red)"B"%ansi(white)"A"%ansi(high,red)"B"%ansi(white)"L"%ansi(high,red)"E"%ansi(reset) %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%2)}</value>
+      </trigger>
+      <trigger name="25_UNSPEAKABLE" priority="28310" case="true">
+        <pattern>(*) UNSPEAKABLE (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%2,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=300
+#IF (@DMDisp=1) {#SUB {%1 %ansi(blink)%ansi(high,red)"U"%ansi(white)"N"%ansi(high,red)"S"%ansi(white)"P"%ansi(high,red)"E"%ansi(white)"A"%ansi(high,red)"K"%ansi(white)"A"%ansi(high,red)"B"%ansi(white)"L"%ansi(high,red)"E"%ansi(reset) %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%2}}
+#IF (@DMTrack=1) {
+  #ADD DMUC 1
+  #CALL @DMTrackStart(%1,$intVal,%2)
+}</value>
+      </trigger>
+      <trigger name="09_maims" priority="28320" case="true">
+        <pattern>(*) (maim?) (*)</pattern>
+        <value>#IF (@DMFakeCheck(%1,1)=1) {#EXIT}
+#IF (@DMFakeCheck(%3,2)=1) {#EXIT}
+#LOCAL $intVal
+$intVal=34.5
+#IF (@DMDisp=1) {#SUB {%1 %ansi(gray)%2 %ansi(magenta)"("%ansi(gray)$intVal%ansi(magenta)") "%ansi(reset)%3}}
+#IF (@DMTrack=1) {#CALL @DMTrackStart(%1,$intVal,%3)}</value>
+      </trigger>
+      <class name="DMAutodetect_Character" enabled="false">
+        <trigger priority="16610" trigontrig="false">
+          <pattern>^Score for (*)</pattern>
+          <value>#LOCAL $strName
+$strName=%replace(%1,",","")
+$strName=%left($strName,(%pos(" ",$strName)-1))
+#IF ($strName&lt;&gt;@DMCurChar) {dmchar $strName}</value>
+        </trigger>
+        <trigger priority="46694">
+          <pattern>^Welcome to DSL! DSL Loves You! Other muds think you are ugly, they said so!</pattern>
+          <value>#WAIT 1000
+score</value>
+        </trigger>
+      </class>
+    </class>
+    <class name="DMAliases">
+      <alias name="DMOn" parsearg="false">
+        <value>#T+ DamMon/DMTriggers
+DMStatus</value>
+      </alias>
+      <alias name="DMOff" parsearg="false">
+        <value>#T- DamMon/DMTriggers
+DMStatus</value>
+      </alias>
+      <alias name="DMReset" parsearg="false">
+        <value>#LOOPDB @DMDamDetails {#DELKEY @DMDamDetails %key}
+#LOOPDB @DMDamDetailsS {#DELKEY @DMDamDetailsS %key}
+#LOOPDB @DMDamDone {#DELKEY @DMDamDone %key}
+#LOOPDB @DMDamDoneP {#DELKEY @DMDamDoneP %key}
+#LOOPDB @DMDamDonePS {#DELKEY @DMDamDonePS %key}
+#LOOPDB @DMDamDoneS {#DELKEY @DMDamDoneS %key}
+#LOOPDB @DMDamTaken {#DELKEY @DMDamTaken %key}
+#LOOPDB @DMDamTakenP {#DELKEY @DMDamTakenP %key}
+#LOOPDB @DMDamTakenPS {#DELKEY @DMDamTakenPS %key}
+#LOOPDB @DMDamTakenS {#DELKEY @DMDamTakenS %key}
+#LOOPDB @DMDamTypes {#DELKEY @DMDamTypes %key}
+#LOOPDB @DMDamTypesS {#DELKEY @DMDamTypesS %key}
+#VAR DMUC 0
+#SHOW %ansi(yellow)Damage Data Reset!
+DMStatus</value>
+      </alias>
+      <alias name="DMRep" parsearg="false">
+        <value><![CDATA[#LOCAL $intTotal $intTotal2 $intTotal3 $intCounter $intVal $intPerc $intC $intAve
+#CALL @DMSorter()
+$intTotal=0
+$intTotal2=0
+$intTotal3=0
+#SHOW %ansi(brown)"=====================================TOTAL DAMAGE DONE======================================="
+#SHOW %ansi(white)"###  SOURCE                                                 HITS   DAMAGE        AVEDAM  PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamDoneS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&0.0n",%item(%val,2))
+  $intTotal=$intTotal+%item(%val,2)
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  $intTotal2=$intTotal2+%item(%val,3)
+  $intTotal3=($intTotal/$intTotal2)
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#SHOW %ansi(high,green)"                                                     TOTALS "$intTotal2 %repeat(" ",5 - %len($intTotal2)) %format("&0.0n",$intTotal) %repeat(" ",12 - %len(%format("&0.0n",$intTotal))) $intTotal3
+$intCounter=0
+#SHOW " "
+#SHOW %ansi(brown)"=====================================TOTAL DAMAGE TAKEN======================================"
+#SHOW %ansi(white)"###  TARGET                                                 HITS   DAMAGE        AVEDAM  PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamTakenS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&0.0n",%item(%val,2))
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+$intCounter=0
+$intTotal=0
+$intTotal2=0
+$intTotal3=0
+#SHOW " "
+#SHOW %ansi(brown)"======================================PVP DAMAGE DONE========================================"
+#SHOW %ansi(white)"###  SOURCE                                                 HITS   DAMAGE        AVEDAM  PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamDonePS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&0.0n",%item(%val,2))
+  $intTotal=$intTotal+%item(%val,2)
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  $intTotal2=$intTotal2+%item(%val,3)
+  $intTotal3=($intTotal/$intTotal2)  
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#SHOW %ansi(high,green)"                                                     TOTALS "$intTotal2 %repeat(" ",5 - %len($intTotal2)) %format("&0.0n",$intTotal) %repeat(" ",12 - %len(%format("&0.0n",$intTotal))) $intTotal3
+$intCounter=0
+#SHOW " "
+#SHOW %ansi(brown)"======================================PVP DAMAGE TAKEN======================================="
+#SHOW %ansi(white)"###  TARGET                                                 HITS   DAMAGE        AVEDAM  PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamTakenPS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&0.0n",%item(%val,2))
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+$intCounter=0
+#SHOW " "
+#SHOW %ansi(brown)"========================================DAMAGE TYPES========================================="
+#SHOW %ansi(white)"###  SOURCE -> TYPE                                         HITS   DAMAGE        AVEDAM  PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamTypesS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&0.0n",%item(%val,2))
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+$intCounter=0
+#SHOW " "
+#SHOW %ansi(brown)"=======================================DAMAGE DETAILS========================================"
+#SHOW %ansi(white)"###  SOURCE -> TARGET                                       HITS   DAMAGE        AVEDAM  PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamDetailsS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&0.0n",%item(%val,2))
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#SHOW %ansi(high,green)"Unspeakable Count : "@DMUC]]></value>
+      </alias>
+      <alias name="DMDisplay" parsearg="false">
+        <value>#IF (@DMDisp=0) {#VAR DMDisp 1} {#VAR DMDisp 0}
+DMStatus</value>
+      </alias>
+      <alias name="DMStatus" parsearg="false">
+        <value>#LOCAL $strTrack $strDisplay $strDMS $strChar
+
+#IF (@DMTrack=1) {$strTrack=%ansi(high,green)"YES"} {$strTrack=%ansi(high,red)"NO"}
+#IF (@DMDisp=1) {$strDisplay=%ansi(high,green)"YES"} {$strDisplay=%ansi(high,red)"NO"}
+#IF (%class(DamMon/DMTriggers)=1) {$strDMS=%ansi(high,green)"YES"} {$strDMS=%ansi(high,red)"NO"}
+$strChar=%ansi(white)@DMCurChar
+
+#SAY "======DamMon Status==========="
+#SAY "YOU/YOUR REPLACEMENT : "$strChar
+#SAY "TRIGGERS ENABLED     : "$strDMS
+#SAY "DISPLAYING NUMBERS   : "$strDisplay
+#SAY "TRACKING DAMAGE      : "$strTrack</value>
+      </alias>
+      <alias name="DMPVE">
+        <value><![CDATA[#LOCAL $intCounter $intVal $intPerc $strFinal $intLimit $strIntro
+#CALL @DMSorter()
+$intLimit=10
+#IF (%len(%1)>0) {#IF (%isnumber(%1)=1) {$intLimit=%1}}
+$strIntro="Damage Meter, Top "$intLimit" ->"
+#LOOPDB @DMDamDoneS {
+  $intCounter=$intCounter+1
+  #IF ($intCounter>$intLimit) {#BREAK} {
+    $intVal=%format("&0.0n",%item(%val,2))
+    $intHits=%item(%val,3)
+    $intAve=(%item(%val,2)/%item(%val,3))
+    $intPerc=%replace(%item(%val,4),"0.","")
+    #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+    $strFinal=$strFinal @DMCEnum($intCounter)"-"%item(%val,1) "[DAM:"$intVal" HITS:"$intHits "AVE:"$intAve" %:"$intPerc"] |"
+  }
+}
+$strFinal=%left($strFinal,%len($strFinal)-1)
+gt $strIntro $strFinal]]></value>
+        <notes>Experimental</notes>
+      </alias>
+      <alias name="DMT" parsearg="false">
+        <value>#IF (@DMTrack=0) {#VAR DMTrack 1} {#VAR DMTrack 0}
+DMStatus</value>
+      </alias>
+      <alias name="DMChar">
+        <value>#IF (%len(%1)&gt;0) {
+  #VAR DMCurChar %1
+  #SAY DamMon reports will now display instances of You and Your as %1
+}</value>
+      </alias>
+      <alias name="DMImport">
+        <value>#IF (%len($strFileName)=0) {#EXIT}
+//Turning stuff off Section
+//Examples of stuff you should turn off:
+//Tick Timers, Disarm Triggers, Echos, Gags, Metric Gatherers
+
+//Starting the import
+#T+ DamMon/DMTriggers
+#VAR DMTrack 1
+#FILE 1 $strFileName
+#TYPE 1
+#CLOSE 1
+#VAR DMTrack 0
+dmrep
+
+//Turning stuff back on Section
+</value>
+        <arglist>$strFileName</arglist>
+      </alias>
+      <alias name="DMExport" parsearg="false">
+        <value>#LOG "DamMon_Report.txt"
+dmrep
+#LOG</value>
+      </alias>
+      <alias name="DMRepS" parsearg="false">
+        <value>#LOCAL $intTotal $intCounter $intVal $intPerc $intC $intAve
+#CALL @DMSorter()
+#SHOW %ansi(brown)"=====================================TOTAL DAMAGE DONE======================================="
+#SHOW %ansi(white)"###  SOURCE                                                 HITS   DAMAGE        DPS     PERC"
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#LOOPDB @DMDamDoneS {
+  $intCounter=$intCounter+1
+  $intAve=(%item(%val,2)/%item(%val,3))
+  $intVal=%format("&amp;0.0n",%item(%val,2))
+  $intTotal=$intTotal+%item(%val,2)
+  $intPerc=%replace(%item(%val,4),"0.","")
+  #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+  $intC=%item(%val,3)
+  #SHOW %ansi(white)@DMCEnum($intCounter)"  "%item(%val,1) %repeat(" ",53 - %len(%item(%val,1))) $intC %repeat(" ",5 - %len($intC)) $intVal %repeat(" ",12 - %len($intVal)) $intAve %repeat(" ",6 - %len($intAve)) $intPerc
+}
+#SHOW %ansi(white)"---  ------------------------------------------------------ -----  ------------  ------  ----"
+#SHOW %ansi(high,green)"                                                            TOTAL  "%format("&amp;0.0n",$intTotal)</value>
+      </alias>
+      <alias name="DMPVP">
+        <value><![CDATA[#LOCAL $intCounter $intVal $intPerc $strFinal $intLimit $strIntro $intAve $intHits
+#CALL @DMSorter()
+$intLimit=10
+#IF (%len(%1)>0) {#IF (%isnumber(%1)=1) {$intLimit=%1}}
+$strIntro="PVP Damage Meter, Top "$intLimit" ->"
+#LOOPDB @DMDamDonePS {
+  $intCounter=$intCounter+1
+  #IF ($intCounter>$intLimit) {#BREAK} {
+    $intVal=%format("&0.0n",%item(%val,2))
+    $intHits=%item(%val,3)
+    $intAve=(%item(%val,2)/%item(%val,3))
+    $intPerc=%replace(%item(%val,4),"0.","")
+    #IF (%len($intPerc)=1) {$intPerc=$intPerc"0"}
+    $strFinal=$strFinal @DMCEnum($intCounter)"-"%item(%val,1) "[DAM:"$intVal" HITS:"$intHits "AVE:"$intAve" %:"$intPerc"] |"
+  }
+}
+$strFinal=%left($strFinal,%len($strFinal)-1)
+gt $strIntro $strFinal]]></value>
+        <notes>Experimental</notes>
+      </alias>
+      <alias name="DMHelp">
+        <value>#SHOW "                      ------------------------------------------"
+#SHOW "                     |                                          |"
+#SHOW "                     |   DamMon, a Damage Calculator for CMUD   |"
+#SHOW "                     |             Written by Jenn D            |"
+#SHOW "                     |             5/22/2020 Ver 1.3            |"
+#SHOW "                     |                                          |"
+#SHOW "                      ------------------------------------------"
+#SHOW " "
+#SHOW %ansi(white)"Purpose"
+#SHOW %ansi(brown)"--------------------------------------------------------------------------------------"
+#SHOW "DamMon provides options to add numerical damage values to combat nouns and to save"
+#SHOW "combat data in internal tables. It includes a report that summarizes whatever"
+#SHOW "data is currently saved and tools to import/export data."
+#SHOW " "
+#SHOW %ansi(white)"Instructions/General Info"
+#SHOW %ansi(brown)"--------------------------------------------------------------------------------------"
+#SHOW "1) The default location CMUD imports/exports files to is its profile data folder."
+#SHOW "   Example location C:\CMUD\DSL\"
+#SHOW "   Example location %UserProfile%\Documents\My games\CMUD\DSL\"
+#SHOW " "
+#SHOW "2) When using dmimport be aware that any instances of You or Your in the source"
+#SHOW "   will be replaced with the value found in the variable DMCurChar. You can easily"
+#SHOW "   change this with the dmchar command prior to importing data. This only matters"
+#SHOW "   if the log you are importing was taken from the perspective of someone involved"
+#SHOW "   in the fight."
+#SHOW " "
+#SHOW "3) dmimport processes information as if CMUD is seeing it come from DSL, this"
+#SHOW "   means that anything contained in the log CAN set off your triggers. Unless"
+#SHOW "   the log you're importing is very clean you may want to disable any triggers"
+#SHOW "   that may pickup on what's inside the log."
+#SHOW " "
+#SHOW "4) When I import data I normally do so from the DSL login screen to avoid polluting"
+#SHOW "   the dataset."
+#SHOW " "
+#SHOW "5) Enabling DamMon/DMTriggers/DMAutodetect_Character will cause the DMCurChar variable"
+#SHOW "   to be automatically be set to your current character through the score command."
+#SHOW " "
+#SHOW %ansi(white)"Command List"
+#SHOW %ansi(brown)"--------------------------------------------------------------------------------------"
+#SHOW "dmchar        : Changes the value DamMon will use in place of You and Your in reports."
+#SHOW "              : Usage: dmchar charactername"
+#SHOW "dmdisplay     : Toggles numerical damage values on/off."
+#SHOW "dmexport      : Writes currently saved data to DamMon_Report.txt"
+#SHOW "dmpve         : Reports the top x lines from the DMDamDoneS table to your group."
+#SHOW "              : Note    : You can use this with or without a numerical argument."
+#SHOW "              : Note    : If no argument is provided 10 lines will be displayed."
+#SHOW "              : Usage   : dmpve"
+#SHOW "              : Usage   : dmpve x"
+#SHOW "dmpvp         : Reports the top x lines from the DMDamDonePS table to your group."
+#SHOW "              : Note    : You can use this with or without a numerical argument."
+#SHOW "              : Note    : If no argument is provided 10 lines will be displayed."
+#SHOW "              : Usage   : dmpvp"
+#SHOW "              : Usage   : dmpvp x"
+#SHOW "dmhelp        : Displays the screen you're looking at now."
+#SHOW "dmimport      : Reads a file and imports combat data."
+#SHOW "              : Usage   : dmimport filename"
+#SHOW "              : Example : dmimport battlelog.txt"
+#SHOW "              : Example : dmimport C:\RandomFolder\battlelog.txt"
+#SHOW "dmoff         : Disables all DamMon Triggers."
+#SHOW "              : Note    : Using this disables numerical damage and data tracking."
+#SHOW "dmon          : Enables all DamMon Triggers."
+#SHOW "dmrep         : Generates and displays the summary report."
+#SHOW "dmreps        : Generates and displays the damage done report."
+#SHOW "dmreset       : Deletes all saved data."
+#SHOW "dmstatus      : Displays process state info."
+#SHOW "dmt           : Toggles data tracking."
+#SHOW " "
+#SHOW %ansi(white)"Tables (All are found in DamMon/DMTables)"
+#SHOW %ansi(brown)"--------------------------------------------------------------------------------------"
+#SHOW "DMDamDetails  : Contains combat data with targets."
+#SHOW "DMDamDetailsS : Contains sorted combat data with targets."
+#SHOW "DMDamDone     : Contains total combat damage done."
+#SHOW "DMDamDoneP    : Contains total pvp combat damage done."
+#SHOW "DMDamDonePS   : Contains sorted total pvp combat damage done."
+#SHOW "DMDamDoneS    : Contains sorted total combat damage done."
+#SHOW "DMDamTaken    : Contains total damage taken."
+#SHOW "DMDamTakenP   : Contains total pvp damage taken."
+#SHOW "DMDamTakenPS  : Contains sorted total pvp damage taken."
+#SHOW "DMDamTakenS   : Contains sorted total damage taken."
+#SHOW "DMDamTypes    : Contains total damage done, by damage type."
+#SHOW "DMDamTypesS   : Contains sorted total damage done, by damage type."</value>
+      </alias>
+    </class>
+    <class name="DMVariables">
+      <var name="DMList" type="Record" sorted="1">
+        <value><![CDATA[*** DEMOLISHES ***="57-60|58.5"|*** DEVASTATES **="61-75|68"|<<< ERADICATES >>>="126-150|138"|=== OBLITERATES ===="76-100|88"|>>> ANNIHILATES <<<="101-125|113"|decimates="25-28|26.5"|devastates="29-32|30.5"|DISEMBOWELS="41-44|42.5"|DISMEMBERS="45-48|46.5"|DREADFUL="201-225|213"|GHASTLY="151-175|163"|grazes="5-8|6.5"|HIDEOUS="226-250|238"|hits="9-12|10.5"|HORRID="176-200|188"|INDESCRIBABLE="251-275|263"|injures="13-16|14.5"|maims="33-36|34.5"|MANGES="53-56|54.5"|MASSACRES="49-52|50.5"|mauls="21-24|22.5"|MUTILATES="37-40|38.5"|scratches="1-4|2.5"|UNSPEAKABLE="276+|300"|wounds="17-20|18.5"]]></value>
+        <json><![CDATA[{"*** DEMOLISHES ***":["57-60",58.5],"*** DEVASTATES **":["61-75",68],"<<< ERADICATES >>>":["126-150",138],"=== OBLITERATES ===":["76-100",88],">>> ANNIHILATES <<<":["101-125",113],"decimates":["25-28",26.5],"devastates":["29-32",30.5],"DISEMBOWELS":["41-44",42.5],"DISMEMBERS":["45-48",46.5],"DREADFUL":["201-225",213],"GHASTLY":["151-175",163],"grazes":["5-8",6.5],"HIDEOUS":["226-250",238],"hits":["9-12",10.5],"HORRID":["176-200",188],"INDESCRIBABLE":["251-275",263],"injures":["13-16",14.5],"maims":["33-36",34.5],"MANGES":["53-56",54.5],"MASSACRES":["49-52",50.5],"mauls":["21-24",22.5],"MUTILATES":["37-40",38.5],"scratches":["1-4",2.5],"UNSPEAKABLE":["276+",300],"wounds":["17-20",18.5]}]]></json>
+      </var>
+      <var name="DMTrack" type="Integer">0</var>
+      <var name="DMDisp" type="Integer">0</var>
+      <var name="DMCurChar">Player</var>
+      <var name="DMUC" type="Integer">0</var>
+    </class>
+    <class name="DMTables">
+      <var name="DMDamDetails" type="Record">
+        <json>{}</json>
+      </var>
+      <var name="DMDamDone" type="Record">
+        <json>{}</json>
+      </var>
+      <var name="DMDamTaken" type="Record">
+        <json>{}</json>
+      </var>
+      <var name="DMDamDetailsS" type="Record" sorted="-2">
+        <json>{}</json>
+      </var>
+      <var name="DMDamDoneS" type="Record" sorted="-2">
+        <json>{}</json>
+      </var>
+      <var name="DmDamTakenS" type="Record" sorted="-2">
+        <json>{}</json>
+      </var>
+      <var name="DMDamTypes" type="Record">
+        <json>{}</json>
+      </var>
+      <var name="DMDamTypesS" type="Record" sorted="-2">
+        <json>{}</json>
+      </var>
+      <var name="DMDamDonePS" type="Record" sorted="-2">
+        <json>{}</json>
+      </var>
+      <var name="DMDamTakenPS" type="Record" sorted="-2">
+        <json>{}</json>
+      </var>
+      <var name="DMDamDoneP" type="Record">
+        <json>{}</json>
+      </var>
+      <var name="DMDamTakenP" type="Record">
+        <json>{}</json>
+      </var>
+    </class>
+    <class name="DMFunctions">
+      <func name="DMFakeCheck">
+        <value><![CDATA[#SWITCH ($intMode) 
+  (1) {
+    #IF (%pos("answers ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("ask ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("You have",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("level!!",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("OOC: ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("OOC Clan: ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("tells ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("tell ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("the group ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("says ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("gossips ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("yells ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("clans ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("quests ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("Bloodbath: ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("Kingdom: ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("radios ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("grats ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("shouts ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("[Newbie]: ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("auctions: ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("some ",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("flash of holy power erupts",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("'s ",$strVal)=0) {#IF (%pos(You,$strVal)=0) {#RETURN 1}} 
+    #IF (%pos("The bolt",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("lightning bolt leaps",$strVal)>0) {#RETURN 1} 
+    }
+  (2) {
+    #IF (%pos("holy smite",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("mighty blow from",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("hits the ground",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("transfer to",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("his head",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("her head",$strVal)>0) {#RETURN 1} 
+    #IF (%pos("DEAD.",$strVal)>0) {#RETURN 1} 
+    }
+#RETURN 0]]></value>
+        <arglist>$strVal, $intMode</arglist>
+      </func>
+      <func name="DMAdd">
+        <value>#LOCAL $strKey $intNew $intC $strTFix
+
+#SWITCH ($strTarget) 
+  ("him") {$strTFix=$strSource} 
+  ("her") {$strTFix=$strSource} 
+  {$strTFix=$strTarget}
+$strKey=$strSource "-&gt;" $strTFix
+$intNew=$intDam
+$intC=1
+#LOOPDB @DMDamDetails {
+  #IF (%key=$strKey) {
+    $intNew=%item(%val,1)+$intDam
+    $intC=%item(%val,2)+1
+  }
+}
+#ADDKEY DMDamDetails {$strKey} {$intNew|$intC}
+$intNew=$intDam
+$intC=1
+#LOOPDB @DMDamDone {
+  #IF (%key=$strSource) {
+  $intNew=%item(%val,1)+$intDam
+  $intC=%item(%val,2)+1
+  }
+}
+#ADDKEY DMDamDone {$strSource} {$intNew|$intC}
+$intNew=$intDam
+$intC=1
+#IF (%pos(" ",$strSource)=0) {
+  #IF (%pos(" ",$strTFix)=0) {
+    #LOOPDB @DMDamDoneP {
+      #IF (%key=$strSource) {
+        $intNew=%item(%val,1)+$intDam
+        $intC=%item(%val,2)+1
+      }
+    }
+  }
+}
+#IF (%pos(" ",$strSource)=0) {
+  #IF (%pos(" ",$strTFix)=0) {
+    #ADDKEY DMDamDoneP {$strSource} {$intNew|$intC}
+  }
+}
+$intNew=$intDam
+$intC=1
+#LOOPDB @DMDamTaken {
+  #IF (%key=$strTFix) {
+    $intNew=%item(%val,1)+$intDam
+    $intC=%item(%val,2)+1
+  }
+}
+#ADDKEY DMDamTaken {$strTFix} {$intNew|$intC}
+$intNew=$intDam
+$intC=1
+#IF (%pos(" ",$strSource)=0) {
+  #IF (%pos(" ",$strTFix)=0) {
+    #LOOPDB @DMDamTakenP {
+      #IF (%key=$strTFix) {
+        $intNew=%item(%val,1)+$intDam
+        $intC=%item(%val,2)+1
+      }
+    }
+  }
+}
+#IF (%pos(" ",$strSource)=0) {
+  #IF (%pos(" ",$strTFix)=0) {
+    #ADDKEY DMDamTakenP {$strTFix} {$intNew|$intC}
+  }
+}
+$intNew=$intDam
+$intC=1
+$strKey=$strSource "-&gt;" $strDType
+#LOOPDB @DMDamTypes {
+  #IF (%key=$strKey) {
+    $intNew=%item(%val,1)+$intDam
+    $intC=%item(%val,2)+1
+  }
+}
+#ADDKEY DMDamTypes {$strKey} {$intNew|$intC}</value>
+        <arglist>$strSource, $intDam, $strTarget, $strDType</arglist>
+      </func>
+      <func name="DMSortEnum">
+        <value>#SWITCH (%len($intPos)) 
+  (1) {$intPos="000000000"$intPos} 
+  (2) {$intPos="00000000"$intPos} 
+  (3) {$intPos="0000000"$intPos} 
+  (4) {$intPos="000000"$intPos} 
+  (5) {$intPos="00000"$intPos} 
+  (6) {$intPos="0000"$intPos} 
+  (7) {$intPos="000"$intPos} 
+  (8) {$intPos="00"$intPos} 
+  (9) {$intPos="0"$intPos} 
+#RETURN $intPos</value>
+        <arglist>$intPos</arglist>
+      </func>
+      <func name="DMCEnum">
+        <value>#SWITCH (%len($intPos)) 
+  (1) {$intPos="00"$intPos} 
+  (2) {$intPos="0"$intPos} 
+#RETURN $intPos</value>
+        <arglist>$intPos</arglist>
+      </func>
+      <func name="DMSorter">
+        <value>#LOCAL $intVal $intTotal
+
+#LOOPDB @DMDamDetailsS {#DELKEY @DMDamDetailsS %key}
+#LOOPDB @DMDamDoneS {#DELKEY @DMDamDoneS %key}
+#LOOPDB @DMDamDonePS {#DELKEY @DMDamDonePS %key}
+#LOOPDB @DMDamTakenS {#DELKEY @DMDamTakenS %key}
+#LOOPDB @DMDamTakenPS {#DELKEY @DMDamTakenPS %key}
+#LOOPDB @DMDamTypesS {#DELKEY @DMDamTypesS %key}
+$intTotal=0.0
+#LOOPDB @DMDamDone {
+  $intVal=%replace(%item(%val,1),".5","")
+  $intTotal=($intTotal+$intVal)+0.0
+  #ADDKEY DMDamDoneS {@DMSortEnum($intVal) - %key} {%key|$intVal|%item(%val,2)}
+}
+#LOOPDB @DMDamDoneS {
+  $intVal=%item(%val,2)+0.0
+  $intVal=%round(($intVal/$intTotal),2)
+  #IF ($intVal=1) {$intVal=100}
+  #ADDKEY DMDamDoneS {%key} {%item(%val,1)|%item(%val,2)|%item(%val,3)|$intVal}
+}
+$intTotal=0.0
+#LOOPDB @DMDamDoneP {
+  $intVal=%replace(%item(%val,1),".5","")
+  $intTotal=($intTotal+$intVal)+0.0
+  #ADDKEY DMDamDonePS {@DMSortEnum($intVal) - %key} {%key|$intVal|%item(%val,2)}
+}
+#LOOPDB @DMDamDonePS {
+  $intVal=%item(%val,2)+0.0
+  $intVal=%round(($intVal/$intTotal),2)
+  #IF ($intVal=1) {$intVal=100}
+  #ADDKEY DMDamDonePS {%key} {%item(%val,1)|%item(%val,2)|%item(%val,3)|$intVal}
+}
+$intTotal=0.0
+#LOOPDB @DMDamTaken {
+  $intVal=%replace(%item(%val,1),".5","")
+  $intTotal=($intTotal+$intVal)+0.0
+  #ADDKEY DMDamTakenS {@DMSortEnum($intVal) - %key} {%key|$intVal|%item(%val,2)}
+}
+#LOOPDB @DMDamTakenS {
+  $intVal=%item(%val,2)+0.0
+  $intVal=%round(($intVal/$intTotal),2)
+  #IF ($intVal=1) {$intVal=100}
+  #ADDKEY DMDamTakenS {%key} {%item(%val,1)|%item(%val,2)|%item(%val,3)|$intVal}
+}
+$intTotal=0.0
+#LOOPDB @DMDamTakenP {
+  $intVal=%replace(%item(%val,1),".5","")
+  $intTotal=($intTotal+$intVal)+0.0
+  #ADDKEY DMDamTakenPS {@DMSortEnum($intVal) - %key} {%key|$intVal|%item(%val,2)}
+}
+#LOOPDB @DMDamTakenPS {
+  $intVal=%item(%val,2)+0.0
+  $intVal=%round(($intVal/$intTotal),2)
+  #IF ($intVal=1) {$intVal=100}
+  #ADDKEY DMDamTakenPS {%key} {%item(%val,1)|%item(%val,2)|%item(%val,3)|$intVal}
+}
+$intTotal=0.0
+#LOOPDB @DMDamDetails {
+  $intVal=%replace(%item(%val,1),".5","")
+  $intTotal=($intTotal+$intVal)+0.0
+  #ADDKEY DMDamDetailsS {@DMSortEnum($intVal) - %key} {%key|$intVal|%item(%val,2)}
+}
+#LOOPDB @DMDamDetailsS {
+  $intVal=%item(%val,2)+0.0
+  $intVal=%round(($intVal/$intTotal),2)
+  #IF ($intVal=1) {$intVal=100}
+  #ADDKEY DMDamDetailsS {%key} {%item(%val,1)|%item(%val,2)|%item(%val,3)|$intVal}
+}
+$intTotal=0.0
+#LOOPDB @DMDamTypes {
+  $intVal=%replace(%item(%val,1),".5","")
+  $intTotal=($intTotal+$intVal)+0.0
+  #ADDKEY DMDamTypesS {@DMSortEnum($intVal) - %key} {%key|$intVal|%item(%val,2)}
+}
+#LOOPDB @DMDamTypesS {
+  $intVal=%item(%val,2)+0.0
+  $intVal=%round(($intVal/$intTotal),2)
+  #IF ($intVal=1) {$intVal=100}
+  #ADDKEY DMDamTypesS {%key} {%item(%val,1)|%item(%val,2)|%item(%val,3)|$intVal}
+}</value>
+      </func>
+      <func name="DMCleaner">
+        <value><![CDATA[#IF (%pos("<",$strVal)>0) {$strVal=@DMStrip("<",">",$strVal)} 
+#IF (%pos("[",$strVal)>0) {$strVal=@DMStrip("[","]",$strVal)} 
+#IF (%pos("{",$strVal)>0) {$strVal=@DMStrip("{","}",$strVal)} 
+#IF (%pos("(",$strVal)>0) {$strVal=@DMStrip("(",")",$strVal)} 
+$strVal=%trim($strVal)
+
+#SWITCH ($intMode) 
+  (1) {
+    #IF (%pos(You,$strVal)>0) {$strVal=@DMCurChar} 
+    #IF (%pos("'s ",$strVal)>0) {$strVal=%left($strVal,%pos("'s ",$strVal)-1)} 
+    $strVal=%trim($strVal) 
+    }
+  (2) {
+    $strVal=%replace($strVal,"!","") 
+    $strVal=%replace($strVal,".","") 
+    $strVal=%replace($strVal,"things to ","") 
+    $strVal=%trim($strVal) 
+    #IF ($strVal="you") {$strVal=@DMCurChar} 
+    }
+  (3) {
+    #UNTIL (%pos("'s ",$strVal)=0) {$strVal=%right($strVal,(%pos("'s ",$strVal)))} 
+    $strVal=%right($strVal,(%pos(" ",$strVal))) 
+    $strVal=%replace($strVal,"does","") 
+    $strVal=%replace($strVal," ","") 
+    #IF ($strVal="You") {$strVal="NoNoun"} 
+    }
+#RETURN $strVal]]></value>
+        <arglist>$strVal,$intMode</arglist>
+        <notes>#UNTIL (%pos("'s ",$strTemp)=0) {$strTemp=%right($strTemp,(%pos("'s ",$strTemp)+2))};$strVal=%replace($strVal,$strTemp);$strVal=%replace($strVal,"'s ","")}</notes>
+      </func>
+      <func name="DMTrackStart">
+        <value>$str3=@DMCleaner($str1,3)
+$str1=@DMCleaner($str1,1)
+$str2=@DMCleaner($str2,2)
+#CALL @DMAdd($str1,$intVal,$str2,$str3)</value>
+        <arglist>$str1, $intVal, $str2</arglist>
+      </func>
+      <func name="DMStrip">
+        <value>#IF (%len($strChar1)=0) {#EXIT}
+#IF (%len($strChar2)=0) {#EXIT}
+#IF (%len($strVal)=0) {#EXIT}
+#LOCAL $intLPos $intRPos $intTLen
+
+#UNTIL (%pos($strChar1,$strVal)=0) {
+  #IF (%pos($strChar2,$strVal)&gt;0) {
+    $intLPos=%pos($strChar1,$strVal)
+    $intRPos=%pos($strChar2,$strVal)
+    $intTLen=($intRPos-$intLPos)+1
+    $strVal=%replace($strVal,%copy($strVal,$intLPos,$intTLen))
+    } 
+    {
+    $strVal=%replace($strVal,$strChar1,"")
+    }
+}
+
+#RETURN $strVal</value>
+        <arglist>$strChar1, $strChar2, $strVal</arglist>
+      </func>
+    </class>
+  </class>
+</cmud>
