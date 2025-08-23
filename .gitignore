@@ -1,0 +1,18 @@
+# Python / Streamlit standard ignores
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+*.env
+*.db
+.DS_Store
+.vscode/
+
+# Virtual environment
+venv/
+
+# Streamlit state
+.streamlit/
+
+# VS Code workspace storage
+*.code-workspace
