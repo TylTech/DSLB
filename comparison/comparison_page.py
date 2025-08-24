@@ -383,7 +383,11 @@ def show_comparison_page():
         for i, row in filtered_df.iterrows():
             race = row["Race"]
 
-            if race not in ["Felar", "Lagodae", "Wemic", "Lepori"]:
+            if race in ["Felar", "Lagodae", "Wemic", "Lepori"]:
+                # These already include their bonus in the spreadsheet — do nothing
+                continue
+            else:
+                # Apply gender-based stat bonus for all other races
                 if gender == "Male":
                     filtered_df.at[i, "STR"] += 2
                 else:
