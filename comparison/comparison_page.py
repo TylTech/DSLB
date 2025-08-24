@@ -168,72 +168,57 @@ def show_comparison_page():
     def load_combos():
         """
         Load all race/class combinations from Supabase using pagination to ensure ALL records are fetched.
+        Normalize column names after loading.
         """
         # Initialize an empty list to store all data
         all_data = []
         
         # Set pagination parameters
-        page_size = 1000  # Fetch 1000 records at a time
+        page_size = 1000
         current_page = 0
         more_data = True
-        
-        # Show a progress indicator during initial load
+
         with st.spinner("Loading data from database..."):
-            # Use pagination to fetch all records
             while more_data:
-                # Calculate offset for pagination
                 offset = current_page * page_size
-                
-                # Fetch data with pagination
                 response = supabase.table("raceclass").select("*").range(offset, offset + page_size - 1).execute()
-                
-                # Get the data from the response
                 page_data = response.data
-                
-                # If no data was returned, we've reached the end
                 if not page_data:
                     more_data = False
                     break
-                    
-                # Add the data to our list
                 all_data.extend(page_data)
-                
-                # Increment the page counter
                 current_page += 1
-                
-                # Break if we got fewer records than the page size (we've reached the end)
                 if len(page_data) < page_size:
                     more_data = False
-        
-        # Create a DataFrame from all the data
+
+        # Create DataFrame
         df = pd.DataFrame(all_data)
-        
-        # Return the DataFrame
-        return df
+
+        # Normalize column names immediately ✅
+        def normalize_columns(df):
+            target = {
+                "id": "id",
+                "race": "Race",
+                "class": "Class",
+                "boost": "Boost",
+                "str": "STR",
+                "int": "INT",
+                "wis": "WIS",
+                "dex": "DEX",
+                "con": "CON",
+            }
+            mapping = {}
+            for c in df.columns:
+                key = str(c).strip().lower()
+                mapping[c] = target.get(key, c)
+            return df.rename(columns=mapping)
+
+        return normalize_columns(df)
+
 
     # Load the data
     df = load_combos()
 
-    # Normalize incoming column names (handle lowercase from Supabase)
-    def normalize_columns(df):
-        target = {
-            "id": "id",
-            "race": "Race",
-            "class": "Class",
-            "boost": "Boost",
-            "str": "STR",
-            "int": "INT",
-            "wis": "WIS",
-            "dex": "DEX",
-            "con": "CON",
-        }
-        mapping = {}
-        for c in df.columns:
-            key = str(c).strip().lower()
-            mapping[c] = target.get(key, c)  # keep unknown columns as-is
-        return df.rename(columns=mapping)
-
-    df = normalize_columns(df)
 
     # Now this won't KeyError even if the source was lowercase
     df["Boost"] = df["Boost"].astype(str).replace("NO", "N/A")
@@ -242,7 +227,6 @@ def show_comparison_page():
     # Display loading stats
     st.write(f"✅ Loaded {len(df)} rows")
     
-    df["Boost"] = df["Boost"].replace("NO", "N/A")
     if df.empty:
         st.warning("No race/class data found.")
         return
