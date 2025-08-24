@@ -213,6 +213,31 @@ def show_comparison_page():
 
     # Load the data
     df = load_combos()
+
+    # Normalize incoming column names (handle lowercase from Supabase)
+    def normalize_columns(df):
+        target = {
+            "id": "id",
+            "race": "Race",
+            "class": "Class",
+            "boost": "Boost",
+            "str": "STR",
+            "int": "INT",
+            "wis": "WIS",
+            "dex": "DEX",
+            "con": "CON",
+        }
+        mapping = {}
+        for c in df.columns:
+            key = str(c).strip().lower()
+            mapping[c] = target.get(key, c)  # keep unknown columns as-is
+        return df.rename(columns=mapping)
+
+    df = normalize_columns(df)
+
+    # Now this won't KeyError even if the source was lowercase
+    df["Boost"] = df["Boost"].astype(str).replace("NO", "N/A")
+
     
     # Display loading stats
     st.write(f"✅ Loaded {len(df)} rows")
