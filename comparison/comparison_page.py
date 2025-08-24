@@ -383,7 +383,7 @@ def show_comparison_page():
         for i, row in filtered_df.iterrows():
             race = row["Race"]
 
-            if race not in ["Felar", "Lagodae", "Wemic", "Lepori"]:
+            if race not in ["Felar", "Lagoda", "Wemic", "Lepori"]:
                 if gender == "Male":
                     filtered_df.at[i, "STR"] += 2
                 else:
