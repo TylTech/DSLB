@@ -371,10 +371,19 @@ def show_comparison_page():
 
         # Don't add gender to filter summary per requirements
 
-        if gender == "Male":
-            filtered_df["STR"] += 2
-        else:
-            filtered_df["WIS"] += 2
+        for i, row in filtered_df.iterrows():
+            race = row["Race"]
+
+            if race in ["Felar", "Lagodae", "Wemic", "Lepori"]:
+                # These already include their bonus in the spreadsheet — do nothing
+                continue
+            else:
+                # Apply gender-based stat bonus for all other races
+                if gender == "Male":
+                    filtered_df.at[i, "STR"] += 2
+                else:
+                    filtered_df.at[i, "WIS"] += 2
+
 
         def get_stat(key):
             val = st.session_state.get(key, "0")
